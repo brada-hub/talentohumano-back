@@ -66,15 +66,27 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
 
     public function findPersonaByCiAndBirthDate(string $ci, string $birthDate): ?array
     {
-        // Simple mapping, not fully Domain Entity yet but useful for the logic extraction
-        $persona = PersonaModel::where('ci', $ci)->first();
-        if ($persona) {
-            $fechaDb = $persona->fecha_nacimiento ? Carbon::parse($persona->fecha_nacimiento)->format('Y-m-d') : null;
-            $fechaIn = Carbon::parse($birthDate)->format('Y-m-d');
-            if ($fechaDb && $fechaDb !== $fechaIn) return null;
-        }
+        // El CI en BD puede estar almacenado con complemento de expedición
+        // Ej: el usuario escribe "13260003" pero en BD es "13260003 CB"
+        // Buscamos por LIKE para ser flexible con el sufijo
+        $ciLimpio = trim($ci);
 
-        return $persona ? $persona->toArray() : null;
+        $persona = PersonaModel::where(function ($q) use ($ciLimpio) {
+            $q->where('ci', $ciLimpio)                        // match exacto sin sufijo
+              ->orWhere('ci', 'LIKE', $ciLimpio . ' %')       // match con " CB", " LP", etc.
+              ->orWhereRaw('REPLACE(ci, \' \', \'\') LIKE ?', [strtoupper(str_replace(' ', '', $ciLimpio)) . '%']);
+        })->first();
+
+        if (!$persona) return null;
+
+        $fechaDb = $persona->fecha_nacimiento
+            ? Carbon::parse($persona->fecha_nacimiento)->format('Y-m-d')
+            : null;
+        $fechaIn = Carbon::parse($birthDate)->format('Y-m-d');
+
+        if ($fechaDb && $fechaDb !== $fechaIn) return null;
+
+        return $persona->toArray();
     }
 
     /**

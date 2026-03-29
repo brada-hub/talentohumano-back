@@ -32,7 +32,7 @@ final class AuthController extends Controller
         } catch (InvalidCredentialsException $e) {
             return ApiResponse::unauthorized($e->getMessage());
         } catch (\Exception $e) {
-            // General error to prevent leaking info
+            \Illuminate\Support\Facades\Log::error($e->getMessage() . "\n" . $e->getTraceAsString());
             return ApiResponse::error($e->getMessage(), 500);
         }
     }

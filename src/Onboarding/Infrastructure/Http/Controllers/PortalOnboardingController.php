@@ -45,7 +45,7 @@ final class PortalOnboardingController extends Controller
         );
 
         if (!$persona) {
-            return ApiResponse::unauthorized('Datos no coinciden con nuestros registros.');
+            return ApiResponse::notFound('No se encontró ningún registro con esos datos.');
         }
 
         return ApiResponse::success([
@@ -79,7 +79,7 @@ final class PortalOnboardingController extends Controller
         } catch (\InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Error en completar registro: ' . $e->getMessage());
+            Log::error('Error en completar registro: ' . $e->getMessage());
             return ApiResponse::error('Error crítico al procesar el registro.', 500);
         }
     }

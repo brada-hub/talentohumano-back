@@ -8,6 +8,9 @@ class TalentoHumanoServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Bindings for Talento Humano module
+        $this->app->bind(
+            \Src\TalentoHumano\Domain\Repositories\EmpleadoRepositoryInterface::class,
+            \Src\TalentoHumano\Infrastructure\Persistence\EloquentEmpleadoRepository::class
+        );
     }
 }

@@ -18,16 +18,13 @@ final class User
     public function password(): string { return $this->password; }
     public function isActivo(): bool { return $this->activo; }
 
-    /**
-     * Flatten all permissions from roles for easy frontend use.
-     */
     public function permissions(): array
     {
         $permissions = [];
         foreach ($this->roles as $role) {
             if (isset($role['permissions'])) {
                 foreach ($role['permissions'] as $permission) {
-                    $permissions[] = $permission['name'];
+                    $permissions[] = $permission['nombres'] ?? $permission['name'] ?? 'error';
                 }
             }
         }
@@ -36,12 +33,17 @@ final class User
 
     public function toArray(): array
     {
+        $roleNames = [];
+        foreach ($this->roles as $r) {
+            $roleNames[] = $r['nombres'] ?? $r['name'] ?? 'error';
+        }
+
         return [
             'id_user'     => $this->id,
             'id_persona'  => $this->personaId,
             'username'    => $this->username,
             'activo'      => $this->activo,
-            'roles'       => array_column($this->roles, 'name'),
+            'roles'       => $roleNames,
             'permissions' => $this->permissions(),
         ];
     }
