@@ -17,17 +17,6 @@ class ApiResponse
         return response()->json($response, $status);
     }
 
-    public static function paginate($data, int $total, int $page, int $perPage = 15): JsonResponse
-    {
-        return response()->json([
-            'success' => true,
-            'data'    => $data,
-            'total'   => $total,
-            'page'    => $page,
-            'perPage' => $perPage,
-        ], 200);
-    }
-
     public static function error(string $message = 'Error', int $status = 400, $data = []): JsonResponse
     {
         $response = [

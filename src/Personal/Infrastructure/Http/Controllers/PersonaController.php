@@ -23,7 +23,7 @@ final class PersonaController
         $perPage = (int) request('per_page', 15);
         $result  = $this->repo->findAll($page, $perPage);
 
-        return ApiResponse::paginate($result['data'], $result['total'], $result['page'], $perPage);
+        return ApiResponse::success($result['data'], $result['total'], $result['page']);
     }
 
     public function store(CreatePersonaRequest $request): JsonResponse

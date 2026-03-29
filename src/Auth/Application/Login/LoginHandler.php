@@ -2,10 +2,11 @@
 
 namespace Src\Auth\Application\Login;
 
-use Exception;
 use Src\Auth\Domain\Repositories\UserRepositoryInterface;
+use Src\Auth\Domain\Exceptions\InvalidCredentialsException;
+use Illuminate\Support\Facades\Log;
 
-class LoginHandler
+final class LoginHandler
 {
     public function __construct(
         private readonly UserRepositoryInterface $userRepository
@@ -15,16 +16,15 @@ class LoginHandler
     {
         $user = $this->userRepository->findByUsername($command->username);
 
-        if (!$user) {
-            throw new Exception("Invalid credentials");
+        // Security: Generic error for both "user not found" and "wrong password"
+        if (!$user || !$this->userRepository->checkPassword($command->password, $user->password())) {
+            Log::warning("Intento de login fallido para el usuario: {$command->username}");
+            throw new InvalidCredentialsException();
         }
 
-        if (!$this->userRepository->checkPassword($command->password, $user->password())) {
-            throw new Exception("Invalid credentials");
-        }
-
-        if (!$user->activo()) {
-            throw new Exception("This user is inactive.");
+        if (!$user->isActivo()) {
+            Log::alert("Intento de acceso de usuario INACTIVO registrado: {$command->username}");
+            throw new InvalidCredentialsException(); 
         }
 
         $token = $this->userRepository->createToken($user);

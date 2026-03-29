@@ -3,15 +3,15 @@
 namespace Src\Auth\Infrastructure\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Src\Auth\Application\Login\LoginCommand;
 use Src\Auth\Application\Login\LoginHandler;
 use Src\Auth\Application\Logout\LogoutHandler;
+use Src\Auth\Domain\Exceptions\InvalidCredentialsException;
 use Src\Auth\Infrastructure\Http\Requests\LoginRequest;
 use Src\Shared\Infrastructure\Http\ApiResponse;
 
-class AuthController extends Controller
+final class AuthController extends Controller
 {
     public function __construct(
         private readonly LoginHandler $loginHandler,
@@ -28,9 +28,12 @@ class AuthController extends Controller
 
             $result = $this->loginHandler->handle($command);
 
-            return ApiResponse::success($result, 'Login successful');
-        } catch (Exception $e) {
+            return ApiResponse::success($result, 'Sesión iniciada correctamente');
+        } catch (InvalidCredentialsException $e) {
             return ApiResponse::unauthorized($e->getMessage());
+        } catch (\Exception $e) {
+            // General error to prevent leaking info
+            return ApiResponse::error($e->getMessage(), 500);
         }
     }
 
@@ -38,18 +41,15 @@ class AuthController extends Controller
     {
         try {
             $this->logoutHandler->handle();
-            return ApiResponse::success([], 'Logged out successfully');
-        } catch (Exception $e) {
+            return ApiResponse::success([], 'Cierre de sesión exitoso');
+        } catch (\Exception $e) {
             return ApiResponse::error($e->getMessage());
         }
     }
 
-    /**
-     * Get the authenticated user
-     */
     public function me(): JsonResponse
     {
         $user = auth()->user();
-        return ApiResponse::success($user, 'Authenticated user data');
+        return ApiResponse::success($user, 'Datos del usuario autenticado');
     }
 }
