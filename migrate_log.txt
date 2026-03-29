@@ -1,0 +1,62 @@
+
+  Dropping all tables [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m 722.50ms[39m [32;1mDONE[39;22m
+
+  [37;44m INFO [39;49m Preparing database.  
+
+  Creating migration table [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m 26.65ms[39m [32;1mDONE[39;22m
+
+  [37;44m INFO [39;49m Running migrations.  
+
+  0001_01_01_000001_create_cache_table [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m 86.60ms[39m [32;1mDONE[39;22m
+  0001_01_01_000002_create_jobs_table [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m 115.40ms[39m [32;1mDONE[39;22m
+  2026_03_22_015002_create_auth_tables [90m.[39m[90m.[39m[90m.[39m[90m 778.28ms[39m [32;1mDONE[39;22m
+  2026_03_22_015219_create_geo_tables [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m 324.36ms[39m [32;1mDONE[39;22m
+  2026_03_22_015315_create_personal_tables [90m 17.51ms[39m [32;1mDONE[39;22m
+  2026_03_22_015415_create_talento_humano_tables [90m 16.98ms[39m [32;1mDONE[39;22m
+  2026_03_22_015421_create_personal_tables [90m 634.34ms[39m [32;1mDONE[39;22m
+  2026_03_22_015453_create_talento_humano_tables [90m 1s[39m [32;1mDONE[39;22m
+  2026_03_22_015648_create_academico_tables [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m 1s[39m [32;1mDONE[39;22m
+  2026_03_22_015656_create_academico_tables [90m 19.13ms[39m [32;1mDONE[39;22m
+  2026_03_22_020259_create_beneficios_tables [90m 426.06ms[39m [32;1mDONE[39;22m
+  2026_03_22_020306_create_beneficios_tables [90m 16.50ms[39m [32;1mDONE[39;22m
+  2026_03_22_023926_create_personal_access_tokens_table [90m 94.02ms[39m [32;1mDONE[39;22m
+  2026_03_22_162453_create_legajo_documentos_table [90m 207.15ms[39m [32;1mDONE[39;22m
+  2026_03_22_201504_create_configs_table [90m.[39m[90m.[39m[90m 66.93ms[39m [32;1mDONE[39;22m
+  2026_03_22_202133_add_foto_to_personas_table [90m 54.28ms[39m [32;1mDONE[39;22m
+  2026_03_22_202801_create_onboarding_catalogs_tables [90m 60.14ms[39m [32;1mDONE[39;22m
+  2026_03_22_225257_create_documentos_persona_table [90m 142.30ms[39m [32;1mDONE[39;22m
+  2026_03_22_235247_add_fecha_nacimiento_to_personas_table [90m 32.88ms[39m [32;1mDONE[39;22m
+  2026_03_23_003725_increase_ci_length_in_personas_table [90m 18.18ms[39m [32;1mDONE[39;22m
+  2026_03_26_021354_make_hr_fields_nullable_in_empleados_table [90m 212.58ms[39m [32;1mDONE[39;22m
+  2026_03_27_000001_create_onboarding_tables [90m 349.34ms[39m [32;1mDONE[39;22m
+
+
+  [37;44m INFO [39;49m Seeding database.  
+
+  Database\Seeders\GeoSeeder [90m...................[39m [33;1mRUNNING[39;22m  
+[32m--- INICIANDO CARGA DE DATOS GEOGRÁFICOS ---[39m
+[32m✓ Países y Nacionalidades cargados.[39m
+[32m✓ Departamentos/Estados cargados.[39m
+[32m✓ Cargando Ciudades en bloques de 1000...[39m
+
+  [41;1m Illuminate\Database\QueryException [49;22m
+
+[39;1m  SQLSTATE[42000]: Syntax error or access violation: 1701 Cannot truncate a table referenced in a foreign key constraint (`unitepc_db`.`capacitaciones`, CONSTRAINT `capacitaciones_id_ciudad_foreign` FOREIGN KEY (`id_ciudad`) REFERENCES `unitepc_db`.`ciudades` (`id_ciudad`)) (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: unitepc_db, SQL: truncate table `ciudades`)[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39m:[32m841[39m
+    837▕             $exceptionType = $this->isUniqueConstraintError($e)
+    838▕                 ? UniqueConstraintViolationException::class
+    839▕                 : QueryException::class;
+    840▕ 
+  ➜ 841▕             throw new $exceptionType(
+    842▕                 $this->getNameWithReadWriteType(),
+    843▕                 $query,
+    844▕                 $this->prepareBindings($bindings),
+    845▕                 $e,
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m587[39;22m
+  [90m    PDOException::("SQLSTATE[42000]: Syntax error or access violation: 1701 Cannot truncate a table referenced in a foreign key constraint (`unitepc_db`.`capacitaciones`, CONSTRAINT `capacitaciones_id_ciudad_foreign` FOREIGN KEY (`id_ciudad`) REFERENCES `unitepc_db`.`ciudades` (`id_ciudad`))")[39m
+
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m587[39;22m
+  [90m    PDOStatement::execute()[39m
+
