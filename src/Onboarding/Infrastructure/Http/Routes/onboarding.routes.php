@@ -12,6 +12,7 @@ Route::group(['prefix' => 'portal'], function () {
     Route::post('/personal', [PortalOnboardingController::class, 'guardarPersonal']);
     Route::post('/academico', [PortalOnboardingController::class, 'guardarAcademico']);
     Route::post('/completar', [PortalOnboardingController::class, 'completar']);
+    Route::get('/archivo/{filename}', [PortalOnboardingController::class, 'mostrarArchivo'])->where('filename', '.*');
 });
 
 /**

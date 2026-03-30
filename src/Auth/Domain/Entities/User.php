@@ -22,9 +22,12 @@ final class User
     {
         $permissions = [];
         foreach ($this->roles as $role) {
-            if (isset($role['permissions'])) {
-                foreach ($role['permissions'] as $permission) {
-                    $permissions[] = $permission['nombres'] ?? $permission['name'] ?? 'error';
+            $perms = is_array($role) ? ($role['permissions'] ?? []) : ($role->permissions ?? []);
+            foreach ($perms as $p) {
+                if (is_array($p)) {
+                    $permissions[] = $p['nombres'] ?? $p['name'] ?? 'error';
+                } else {
+                    $permissions[] = $p->nombres ?? $p->name ?? 'error';
                 }
             }
         }
@@ -35,7 +38,11 @@ final class User
     {
         $roleNames = [];
         foreach ($this->roles as $r) {
-            $roleNames[] = $r['nombres'] ?? $r['name'] ?? 'error';
+            if (is_array($r)) {
+                $roleNames[] = $r['nombres'] ?? $r['name'] ?? 'error';
+            } else {
+                $roleNames[] = $r->nombres ?? $r->name ?? 'error';
+            }
         }
 
         return [

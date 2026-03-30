@@ -29,6 +29,7 @@ class PersonaModel extends Model
         'estado_civil',
         'id_nacionalidad',
         'direccion_domicilio',
+        'id_depto_residencia',
         'id_ciudad',
         'id_pais',
         'foto',
@@ -54,6 +55,11 @@ class PersonaModel extends Model
     public function ciudad()
     {
         return $this->belongsTo(\Src\Geo\Infrastructure\Persistence\Models\CiudadModel::class, 'id_ciudad');
+    }
+
+    public function departamento()
+    {
+        return $this->belongsTo(\Src\Geo\Infrastructure\Persistence\Models\DepartamentoModel::class, 'id_depto_residencia');
     }
 
     public function pais()

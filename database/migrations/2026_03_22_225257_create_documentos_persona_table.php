@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('documentos_persona', function (Blueprint $table) {
             $table->id('id');
             $table->uuid('id_persona');
-            $table->enum('tipo', ['ci', 'pasaporte', 'cert_nacimiento', 'otro']);
+            $table->string('tipo'); // ci, pasaporte, ci_escaneado, etc.
             $table->string('nombre_archivo');
             $table->string('ruta_archivo');
             $table->string('formato')->nullable(); // pdf o imagen

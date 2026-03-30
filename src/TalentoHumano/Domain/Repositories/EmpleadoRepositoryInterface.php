@@ -16,4 +16,5 @@ interface EmpleadoRepositoryInterface
     public function getDashboardStats(): array;
     public function findPersonaCvDetails(string $personaId): ?array;
     public function getAttachments(array $personaDetails): array;
+    public function updateEmployee(int $id, array $data): array;
 }

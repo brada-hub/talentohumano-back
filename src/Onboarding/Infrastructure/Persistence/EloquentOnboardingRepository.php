@@ -19,6 +19,7 @@ use Src\TalentoHumano\Infrastructure\Persistence\Models\CapacitacionModel;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\IdiomaModel;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\ReconocimientoModel;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\ProduccionIntelectualModel;
+use Src\TalentoHumano\Infrastructure\Persistence\Models\EmpleadoModel;
 use DateTimeImmutable;
 
 final class EloquentOnboardingRepository implements OnboardingRepositoryInterface
@@ -86,6 +87,14 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
 
         if ($fechaDb && $fechaDb !== $fechaIn) return null;
 
+        // CARGAR TODAS LAS RELACIONES PARA EL ONBOARDING
+        $persona->load([
+            'sexo', 'nacionalidad', 'ciudad', 'pais', 'expedido', 'documentos',
+            'formacionPregrado', 'formacionPostgrado', 
+            'experienciaDocente', 'experienciaProfesional',
+            'capacitaciones', 'idiomas', 'produccionIntelectual', 'reconocimientos'
+        ]);
+
         return $persona->toArray();
     }
 
@@ -98,13 +107,17 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         $dAcademico   = $payload['academico'] ?? [];
         $dExperiencia = $payload['experiencia'] ?? [];
         $dOtros       = $payload['otros'] ?? [];
+        $dArchivos    = $payload['archivos'] ?? [];
 
-        DB::transaction(function () use ($dPersona, $dAcademico, $dExperiencia, $dOtros) {
+        DB::transaction(function () use ($dPersona, $dAcademico, $dExperiencia, $dOtros, $dArchivos) {
             
-            // 1. Guardar Persona (Traduciendo campos de texto a IDs)
-            $idPersona = $this->upsertPersona($dPersona);
+            // 1. Guardar Persona y sus Documentos Base (Foto, CI)
+            $idPersona = $this->upsertPersona($dPersona, $dArchivos);
 
-            // 2. Procesar Académico (Borrar y Recrear para simplicidad de sincronización)
+            // 1.1 Guardar Datos de Empleado (Seguro Social, etc)
+            $this->upsertEmpleado($idPersona, $dPersona);
+
+            // 2. Procesar Académico
             $this->syncAcademico($idPersona, $dAcademico);
 
             // 3. Procesar Experiencia
@@ -115,7 +128,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         });
     }
 
-    private function upsertPersona(array $data): int
+    private function upsertPersona(array $data, array $archivos = []): string
     {
         $persona = PersonaModel::where('ci', $data['ci'])->first() ?: new PersonaModel();
         
@@ -138,6 +151,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
             'estado_civil'        => $data['estado_civil'] ?? '',
             'id_nacionalidad'     => $idNac,
             'direccion_domicilio' => $data['direccion_domicilio'] ?? '',
+            'id_depto_residencia' => $data['id_depto_residencia'] ?? null,
             'id_ciudad'           => $idCiudad,
             'id_pais'             => $data['id_pais'] ?? 2,
             'estado_onboarding'   => 'completado',
@@ -145,21 +159,60 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
 
         $persona->save();
 
-        // Procesar Foto y CI Escaneado
-        if (isset($data['foto'])) {
-            $this->saveBase64ToFile($data['foto'], $persona->id, 'foto', true);
+        // Procesar Foto y CI Escaneado (Desde el objeto persona O desde el objeto archivos)
+        $fotoB64 = $data['foto'] ?? ($archivos['foto'] ?? null);
+        if ($fotoB64) {
+            $this->saveBase64ToFile($fotoB64, $persona->id, 'foto', true);
         }
 
-        return $persona->id;
+        $ciB64 = $archivos['ci_escaneado'] ?? ($data['ci_escaneado'] ?? null);
+        if ($ciB64) {
+            $this->saveBase64ToFile($ciB64, $persona->id, 'ci_escaneado', false, true);
+        }
+
+        return (string)$persona->id;
+    }
+
+    private function upsertEmpleado(string $idPersona, array $data): void
+    {
+        // El onboarding suele recolectar datos de seguridad social y correos
+        $empleado = EmpleadoModel::where('id_persona', $idPersona)->first() ?: new EmpleadoModel();
+
+        $idCaja    = $this->resolveId('caja_salud', 'nombre', $data['id_caja'] ?? ($data['caja'] ?? null), null);
+        $idPension = $this->resolveId('entidad_pensiones', 'nombre', $data['id_entidad_pensiones'] ?? ($data['pensiones'] ?? null), null);
+
+        $empleado->fill([
+            'id_persona'            => $idPersona,
+            'celular_institucional' => $data['celular_institucional'] ?? ($data['celular_trabajo'] ?? null),
+            'correo_institucional'  => $data['correo_institucional'] ?? ($data['correo_trabajo'] ?? null),
+            'id_caja'               => $idCaja,
+            'nro_matricula_seguro'  => $data['nro_matricula_seguro'] ?? ($data['matricula_seguro'] ?? null),
+            'id_entidad_pensiones'  => $idPension,
+            'nro_nua_cua'           => $data['nro_nua_cua'] ?? ($data['nua_cua'] ?? null),
+            'estado_laboral'        => 'Activo', // Al completar el onboarding, lo marcamos como activo
+        ]);
+
+        $empleado->save();
     }
 
     private function resolveId(string $table, string $column, $value, $default)
     {
+        // Si ya es numérico, lo devolvemos tal cual
         if (is_numeric($value)) return (int)$value;
+        
+        // Si viene como objeto/array desde el frontend (común en Quasar q-select)
+        if (is_array($value) || is_object($value)) {
+            $value = (array)$value;
+            // Intentar encontrar una llave que sea 'id_TABLA' o 'id'
+            return $value['id_'.$table] ?? ($value['id'] ?? $default);
+        }
+
+        if (empty($value)) return $default;
+
         return DB::table($table)->where($column, 'like', '%'.$value.'%')->value('id_'.$table) ?? $default;
     }
 
-    private function syncAcademico(int $id, array $data): void
+    private function syncAcademico(string $id, array $data): void
     {
         FormacionPregradoModel::where('id_persona', $id)->delete();
         FormacionPostgradoModel::where('id_persona', $id)->delete();
@@ -171,6 +224,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                     'nivel'           => $a['nivel'] ?? '',
                     'institucion'     => $a['institucion'] ?? '',
                     'carrera'         => $a['titulo'] ?? ($a['carrera'] ?? ''),
+                    'id_depto'        => $a['id_depto'] ?? 1,
                     'fecha_diploma'   => $a['fecha_diploma'] ?? null,
                     'fecha_titulo'    => $a['fecha_titulo'] ?? null,
                     'archivo_diploma' => $this->saveBase64ToFile($a['archivo_diploma'] ?? null, $id, 'diploma'),
@@ -182,6 +236,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                     'tipo'             => $a['tipo'] ?? '',
                     'nombre_programa'  => $a['titulo'] ?? ($a['nombre_programa'] ?? ''),
                     'institucion'      => $a['institucion'] ?? '',
+                    'id_depto'         => $a['id_depto'] ?? 1,
                     'fecha_diploma'    => $a['fecha_diploma'] ?? null,
                     'archivo_respaldo' => $this->saveBase64ToFile($a['archivo_respaldo'] ?? null, $id, 'respaldo_post'),
                 ]);
@@ -189,7 +244,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         }
     }
 
-    private function syncExperiencia(int $id, array $data): void
+    private function syncExperiencia(string $id, array $data): void
     {
         ExperienciaProfesionalModel::where('id_persona', $id)->delete();
         ExperienciaDocenteModel::where('id_persona', $id)->delete();
@@ -200,9 +255,10 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                     'id_persona'       => $id,
                     'cargo'            => $e['cargo'] ?? '',
                     'empresa'          => $e['empresa'] ?? '',
+                    'id_depto'         => $e['id_depto'] ?? 1,
                     'fecha_inicio'     => $e['fecha_inicio'] ?? null,
                     'fecha_fin'        => !empty($e['fecha_fin']) ? $e['fecha_fin'] : null,
-                    'archivo_respaldo' => $this->saveBase64ToFile($e['archivo_respaldo'] ?? null, $id, 'respaldo_prof'),
+                    'archivo_respaldo' => $this->saveBase64ToFile($e['archivo_respaldo'] ?? null, $id, 'respaldo_exp_prof'),
                 ]);
             } else {
                 ExperienciaDocenteModel::create([
@@ -210,14 +266,15 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                     'institucion'      => $e['institucion'] ?? '',
                     'carrera'          => $e['carrera'] ?? '',
                     'asignaturas'      => $e['asignaturas'] ?? '',
+                    'id_depto'         => $e['id_depto'] ?? 1,
                     'gestion_periodo'  => $e['gestion_periodo'] ?? '',
-                    'archivo_respaldo' => $this->saveBase64ToFile($e['archivo_respaldo'] ?? null, $id, 'respaldo_doc'),
+                    'archivo_respaldo' => $this->saveBase64ToFile($e['archivo_respaldo'] ?? null, $id, 'respaldo_exp_doc'),
                 ]);
             }
         }
     }
 
-    private function syncOtrosMeritos(int $id, array $data): void
+    private function syncOtrosMeritos(string $id, array $data): void
     {
         CapacitacionModel::where('id_persona', $id)->delete();
         IdiomaModel::where('id_persona', $id)->delete();
@@ -232,6 +289,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                 CapacitacionModel::create(array_merge($base, [
                     'nombre_curso' => $o['nombre_curso'] ?? '',
                     'institucion'  => $o['institucion'] ?? '',
+                    'id_depto'     => $o['id_depto'] ?? 1,
                     'fecha'         => $o['fecha'] ?? null,
                     'carga_horaria' => (int)($o['carga_horaria'] ?? 0),
                 ]));
@@ -246,6 +304,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                 ProduccionIntelectualModel::create(array_merge($base, [
                     'tipo'      => $o['tipo'] ?? '',
                     'titulo'    => $o['titulo'] ?? '',
+                    'id_depto'  => $o['id_depto'] ?? 1,
                     'fecha'     => $o['fecha'] ?? null,
                     'editorial' => $o['editorial'] ?? '',
                 ]));
@@ -253,6 +312,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                 ReconocimientoModel::create(array_merge($base, [
                     'titulo_premio'         => $o['titulo_premio'] ?? '',
                     'institucion_otorgante' => $o['institucion_otorgante'] ?? '',
+                    'id_depto'              => $o['id_depto'] ?? 1,
                     'fecha'                 => $o['fecha'] ?? null,
                     'lugar'                 => $o['lugar'] ?? '',
                 ]));
@@ -260,7 +320,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         }
     }
 
-    private function saveBase64ToFile($b64, int $idPersona, string $type, bool $isProfilePic = false): ?string
+    private function saveBase64ToFile($b64, string $idPersona, string $type, bool $isProfilePic = false, bool $isPersonaDoc = false): ?string
     {
         if (empty($b64) || !is_string($b64) || !str_starts_with($b64, 'data:')) return null;
 
@@ -269,7 +329,9 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
 
         $mime = explode(';', $parts[0])[0];
         $ext = explode('/', $mime)[1] ?? 'png';
-        $ext = str_replace('jpeg', 'jpg', $ext);
+        $ext = str_replace(['jpeg', 'pdf'], ['jpg', 'pdf'], $ext); // Normalizar
+        if (str_contains($mime, 'pdf')) $ext = 'pdf'; 
+
         $fileData = base64_decode($parts[1]);
 
         $fileName = "{$type}_{$idPersona}_".time().".". $ext;
@@ -280,9 +342,9 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
 
         if ($isProfilePic) {
             PersonaModel::where('id', $idPersona)->update(['foto' => $fullPath]);
-        } else {
+        } elseif ($isPersonaDoc) {
             DocumentoPersonaModel::updateOrCreate(
-                ['id_persona' => $idPersona, 'tipo' => str_replace('respaldo_', '', $type)],
+                ['id_persona' => $idPersona, 'tipo' => str_replace(['respaldo_', '_escaneado'], ['', ''], $type)],
                 ['nombre_archivo' => $fileName, 'ruta_archivo' => $fullPath, 'formato' => $ext]
             );
         }

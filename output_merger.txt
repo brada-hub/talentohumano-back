@@ -1,0 +1,7 @@
+Añadiendo a Merger: C:\SISTEMA DE GESTION DE TALENTO HUMANO\SIGETH\sigeth-back\storage\app/public/documentos/ci_escaneado_019d3af8-fcce-73ed-9157-509989f4fc81_1774814153.pdf
+Añadiendo a Merger: C:\SISTEMA DE GESTION DE TALENTO HUMANO\SIGETH\sigeth-back\storage\app/public/documentos/diploma_019d3af8-fcce-73ed-9157-509989f4fc81_1774814153.pdf
+Añadiendo a Merger: C:\SISTEMA DE GESTION DE TALENTO HUMANO\SIGETH\sigeth-back\storage\app/public/documentos/titulo_prov_019d3af8-fcce-73ed-9157-509989f4fc81_1774814153.pdf
+Añadiendo a Merger: C:\SISTEMA DE GESTION DE TALENTO HUMANO\SIGETH\sigeth-back\storage\app/public/documentos/respaldo_exp_doc_019d3af8-fcce-73ed-9157-509989f4fc81_1774814153.pdf
+
+
+MERGER FAIL: 'This PDF document probably uses a compression technique which is not supported by the free parser shipped with FPDI. (See https://www.setasign.com/fpdi-pdf-parser for more details)' in 'C:\SISTEMA DE GESTION DE TALENTO HUMANO\SIGETH\sigeth-back\storage\app/public/documentos/ci_escaneado_019d3af8-fcce-73ed-9157-509989f4fc81_1774814153.pdf'

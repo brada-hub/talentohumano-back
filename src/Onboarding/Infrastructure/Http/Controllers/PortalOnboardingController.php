@@ -45,7 +45,12 @@ final class PortalOnboardingController extends Controller
         );
 
         if (!$persona) {
-            return ApiResponse::notFound('No se encontró ningún registro con esos datos.');
+            return ApiResponse::success([
+                'success'           => true,
+                'session_key'       => 'new_session_' . \Illuminate\Support\Str::random(10),
+                'datos_precargados' => null,
+                'estado'            => 'sin_iniciar'
+            ]);
         }
 
         return ApiResponse::success([
@@ -70,17 +75,32 @@ final class PortalOnboardingController extends Controller
 
     public function completar(Request $request): JsonResponse
     {
+        Log::info('Iniciando proceso de completar registro masivo.');
         try {
-            $token = $request->input('persona.session_key') ?? $request->input('token', '');
+            $token = (string)($request->input('token') ?? $request->input('persona.session_key') ?? '');
             
             $this->completeHandler->handle($request->all(), $token);
 
             return ApiResponse::success([], 'Registro completado con éxito');
         } catch (\InvalidArgumentException $e) {
+            Log::warning('Validación fallida en completar registro: ' . $e->getMessage());
             return ApiResponse::error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            Log::error('Error en completar registro: ' . $e->getMessage());
+            Log::error('Error crítico en completar registro: ' . $e->getMessage());
             return ApiResponse::error('Error crítico al procesar el registro.', 500);
         }
+    }
+
+    public function mostrarArchivo(string $filename): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        // Limpiamos el prefijo 'storage/' si viene en la ruta
+        $cleanPath = str_replace('storage/', '', $filename);
+        $path = storage_path('app/public/' . $cleanPath);
+
+        if (!file_exists($path)) {
+            abort(404, "Archivo no encontrado en: $path");
+        }
+
+        return response()->file($path);
     }
 }

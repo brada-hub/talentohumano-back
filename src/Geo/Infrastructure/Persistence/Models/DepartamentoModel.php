@@ -14,4 +14,9 @@ class DepartamentoModel extends Model
         'codigo_expedido',
         'pais_id',
     ];
+
+    public function pais()
+    {
+        return $this->belongsTo(PaisModel::class, 'pais_id', 'id_pais');
+    }
 }

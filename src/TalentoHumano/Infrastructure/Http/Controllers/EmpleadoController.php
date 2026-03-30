@@ -11,6 +11,7 @@ use Src\TalentoHumano\Application\Empleados\GetEmpleadosHandler;
 use Src\TalentoHumano\Application\Empleados\GetEmpleadoDetailsHandler;
 use Src\TalentoHumano\Application\Empleados\SearchPersonaHandler;
 use Src\TalentoHumano\Application\Empleados\CreateEmpleadoHandler;
+use Src\TalentoHumano\Application\Empleados\UpdateEmpleadoHandler;
 use Src\TalentoHumano\Application\Stats\GetEmpleadoStatsHandler;
 use InvalidArgumentException;
 
@@ -21,6 +22,7 @@ class EmpleadoController extends Controller
         private readonly GetEmpleadoDetailsHandler $getEmpleadoDetailsHandler,
         private readonly SearchPersonaHandler $searchPersonaHandler,
         private readonly CreateEmpleadoHandler $createEmpleadoHandler,
+        private readonly UpdateEmpleadoHandler $updateEmpleadoHandler,
         private readonly GetEmpleadoStatsHandler $getEmpleadoStatsHandler
     ) {}
 
@@ -114,6 +116,16 @@ class EmpleadoController extends Controller
             return ApiResponse::error($e->getMessage(), 422);
         } catch (\Exception $e) {
             return ApiResponse::error('Error al registrar: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        try {
+            $result = $this->updateEmpleadoHandler->handle((int)$id, $request->all());
+            return ApiResponse::success($result, 'Empleado actualizado correctamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al actualizar: ' . $e->getMessage(), 500);
         }
     }
 

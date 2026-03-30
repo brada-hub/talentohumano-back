@@ -15,6 +15,7 @@ Route::prefix('v1/talento-humano')->group(function () {
         Route::get('/empleados/buscar', [EmpleadoController::class, 'buscarPersona']);
         Route::post('/empleados', [EmpleadoController::class, 'store']);
         Route::get('/empleados/{id}', [EmpleadoController::class, 'show']);
+        Route::put('/empleados/{id}', [EmpleadoController::class, 'update']);
 
         // Legajo Digital
         Route::get('/empleados/{id}/legajos', [LegajoController::class, 'index']);

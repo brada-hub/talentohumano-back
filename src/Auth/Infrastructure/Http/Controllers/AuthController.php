@@ -50,6 +50,32 @@ final class AuthController extends Controller
     public function me(): JsonResponse
     {
         $user = auth()->user();
-        return ApiResponse::success($user, 'Datos del usuario autenticado');
+        
+        // Load roles with permissions
+        $user->load(['roles.permissions']);
+        
+        // Build permissions array from all roles
+        $permissions = [];
+        foreach ($user->roles as $role) {
+            foreach ($role->permissions as $permission) {
+                $permissions[] = $permission->nombres;
+            }
+        }
+        $permissions = array_unique($permissions);
+        
+        // Build response
+        $data = [
+            'id_user' => $user->id_user,
+            'id_persona' => $user->id_persona,
+            'username' => $user->username,
+            'activo' => $user->activo,
+            'roles' => $user->roles->map(fn($r) => [
+                'id_rol' => $r->id_rol,
+                'nombres' => $r->nombres,
+            ]),
+            'permissions' => array_values($permissions),
+        ];
+        
+        return ApiResponse::success($data, 'Datos del usuario autenticado');
     }
 }

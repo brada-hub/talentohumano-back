@@ -3,6 +3,7 @@
 namespace Src\TalentoHumano\Infrastructure\Persistence;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Src\Personal\Infrastructure\Persistence\Models\PersonaModel;
 use Src\TalentoHumano\Domain\Repositories\EmpleadoRepositoryInterface;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\EmpleadoModel;
@@ -33,6 +34,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
             'persona.nacionalidad',
             'persona.pais',
             'persona.ciudad',
+            'persona.departamento',
             'persona.ciudad.departamento',
             'persona.expedido',
             'caja',
@@ -201,7 +203,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         // Documentos personales (CI escaneado, etc.)
         if ($persona->documentos) {
             foreach ($persona->documentos as $doc) {
-                $path = $doc->ruta_archivo ? public_path(str_replace('/storage/', 'storage/', $doc->ruta_archivo)) : null;
+                $path = $doc->ruta_archivo ? storage_path('app/public/' . str_replace('/storage/', '', $doc->ruta_archivo)) : null;
                 $isImage = in_array(strtolower($doc->formato ?? ''), ['jpg', 'jpeg', 'png', 'gif', 'webp']);
                 
                 $adjuntos[] = [
@@ -218,7 +220,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->formacionPregrado) {
             foreach ($persona->formacionPregrado as $fp) {
                 if ($fp->archivo_diploma) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $fp->archivo_diploma));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $fp->archivo_diploma));
                     $ext = strtolower(pathinfo($fp->archivo_diploma, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Diploma Pregrado: ' . ($fp->carrera ?? 'N/A'),
@@ -228,7 +230,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
                     ];
                 }
                 if ($fp->archivo_titulo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $fp->archivo_titulo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $fp->archivo_titulo));
                     $ext = strtolower(pathinfo($fp->archivo_titulo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Título en Provisión: ' . ($fp->carrera ?? 'N/A'),
@@ -244,7 +246,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->formacionPostgrado) {
             foreach ($persona->formacionPostgrado as $fpo) {
                 if ($fpo->archivo_respaldo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $fpo->archivo_respaldo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $fpo->archivo_respaldo));
                     $ext = strtolower(pathinfo($fpo->archivo_respaldo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Respaldo Postgrado: ' . ($fpo->nombre_programa ?? 'N/A'),
@@ -260,7 +262,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->experienciaProfesional) {
             foreach ($persona->experienciaProfesional as $ep) {
                 if ($ep->archivo_respaldo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $ep->archivo_respaldo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $ep->archivo_respaldo));
                     $ext = strtolower(pathinfo($ep->archivo_respaldo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Respaldo Exp. Profesional: ' . ($ep->cargo ?? 'N/A') . ' - ' . ($ep->empresa ?? ''),
@@ -276,7 +278,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->experienciaDocente) {
             foreach ($persona->experienciaDocente as $ed) {
                 if ($ed->archivo_respaldo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $ed->archivo_respaldo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $ed->archivo_respaldo));
                     $ext = strtolower(pathinfo($ed->archivo_respaldo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Respaldo Exp. Docente: ' . ($ed->institucion ?? 'N/A'),
@@ -292,7 +294,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->capacitaciones) {
             foreach ($persona->capacitaciones as $cap) {
                 if ($cap->archivo_respaldo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $cap->archivo_respaldo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $cap->archivo_respaldo));
                     $ext = strtolower(pathinfo($cap->archivo_respaldo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Respaldo Capacitación: ' . ($cap->nombre_curso ?? 'N/A'),
@@ -308,7 +310,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->produccionIntelectual) {
             foreach ($persona->produccionIntelectual as $pi) {
                 if ($pi->archivo_respaldo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $pi->archivo_respaldo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $pi->archivo_respaldo));
                     $ext = strtolower(pathinfo($pi->archivo_respaldo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Respaldo Producción: ' . ($pi->titulo ?? 'N/A'),
@@ -324,7 +326,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->idiomas) {
             foreach ($persona->idiomas as $idi) {
                 if ($idi->archivo_respaldo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $idi->archivo_respaldo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $idi->archivo_respaldo));
                     $ext = strtolower(pathinfo($idi->archivo_respaldo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Respaldo Idioma: ' . ($idi->idioma ?? 'N/A'),
@@ -340,7 +342,7 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         if ($persona->reconocimientos) {
             foreach ($persona->reconocimientos as $rec) {
                 if ($rec->archivo_respaldo) {
-                    $path = public_path(str_replace('/storage/', 'storage/', $rec->archivo_respaldo));
+                    $path = storage_path('app/public/' . str_replace('/storage/', '', $rec->archivo_respaldo));
                     $ext = strtolower(pathinfo($rec->archivo_respaldo, PATHINFO_EXTENSION));
                     $adjuntos[] = [
                         'label' => 'Respaldo Reconocimiento: ' . ($rec->titulo_premio ?? 'N/A'),
@@ -353,5 +355,46 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         }
 
         return $adjuntos;
+    }
+
+    public function updateEmployee(int $idEmpleado, array $data): array
+    {
+        return DB::transaction(function () use ($idEmpleado, $data) {
+            $empleado = EmpleadoModel::findOrFail($idEmpleado);
+            $persona = $empleado->persona;
+
+            // 1. Actualizar Persona
+            if (isset($data['persona'])) {
+                $pData = $data['persona'];
+                
+                // Si la foto es un base64 (viene del componente de edición)
+                if (isset($pData['foto']) && str_starts_with($pData['foto'], 'data:')) {
+                    $pData['foto'] = $this->saveBase64Foto($pData['foto'], $persona->id);
+                }
+
+                $persona->update($pData);
+            }
+
+            // 2. Actualizar Empleado
+            if (isset($data['empleado'])) {
+                $eData = $data['empleado'];
+                $empleado->update($eData);
+            }
+
+            return $this->findByIdWithDetails($idEmpleado);
+        });
+    }
+
+    private function saveBase64Foto(string $b64, string $idPersona): string
+    {
+        $parts = explode(',', $b64);
+        if (count($parts) < 2) return $b64;
+
+        $fileData = base64_decode($parts[1]);
+        $fileName = "foto_{$idPersona}_".time().".png";
+        $filePath = "documentos/{$fileName}";
+
+        Storage::disk('public')->put($filePath, $fileData);
+        return "/storage/{$filePath}";
     }
 }

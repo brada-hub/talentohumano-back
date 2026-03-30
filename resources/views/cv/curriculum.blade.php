@@ -2,610 +2,376 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>CV - {{ $persona->primer_apellido }} {{ $persona->nombres }}</title>
+    <title>CV Normalizado - {{ $persona->primer_apellido }} {{ $persona->nombres }}</title>
     <style>
         @page {
-            margin: 20mm 15mm 20mm 15mm;
+            size: 216mm 330mm;
+            margin: 2cm 2cm 2cm 2.5cm;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 10pt;
-            color: #222;
-            line-height: 1.4;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            line-height: 1.5;
+            background: #fff;
+            margin: 0;
+            padding: 0;
         }
-
-        /* ─── ENCABEZADO ─── */
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #4A0E78;
-            padding-bottom: 8px;
-            margin-bottom: 15px;
-        }
-        .header h1 {
-            font-size: 22pt;
-            color: #4A0E78;
-            letter-spacing: 3px;
-            margin-bottom: 2px;
-        }
-        .header h2 {
-            font-size: 11pt;
-            color: #333;
-            font-weight: normal;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-        }
-        .header h3 {
-            font-size: 14pt;
-            color: #4A0E78;
-            letter-spacing: 2px;
-        }
-
-        /* ─── ESCUDO + FOTO ─── */
-        .identity-bar {
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .identity-bar td {
-            vertical-align: middle;
-        }
-        .escudo-img {
-            width: 90px;
-            height: auto;
-        }
-        .foto-img {
-            width: 100px;
-            height: 120px;
-            object-fit: cover;
-            border: 2px solid #4A0E78;
-        }
-        .foto-placeholder {
-            width: 100px;
-            height: 120px;
-            border: 2px solid #4A0E78;
-            background: #f0f0f0;
-            text-align: center;
-            line-height: 120px;
-            color: #999;
-            font-size: 8pt;
-        }
-        .identity-name {
-            font-size: 14pt;
-            font-weight: bold;
-            color: #4A0E78;
-        }
-        .identity-cargo {
-            font-size: 10pt;
-            color: #666;
-            font-style: italic;
-        }
-
-        /* ─── SECCIONES ─── */
-        .section {
-            margin-bottom: 12px;
-            page-break-inside: avoid;
-        }
-        .section-title {
-            background: #4A0E78;
-            color: #fff;
-            padding: 5px 10px;
-            font-size: 11pt;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-        }
-        .section-subtitle {
-            font-size: 9pt;
-            color: #666;
-            font-style: italic;
-            margin-bottom: 4px;
-            padding-left: 10px;
-        }
-
-        /* ─── TABLAS DE DATOS ─── */
-        .data-table {
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
-            font-size: 9pt;
+            margin-bottom: 6px;
+            border: 1.5px solid #4A148C;
         }
-        .data-table th {
-            background: #E8D5F5;
-            color: #4A0E78;
-            padding: 5px 6px;
-            border: 1px solid #C9A0DC;
+        td, th {
+            border: 1px solid #4A148C;
+            padding: 6px 8px;
+            vertical-align: middle;
             text-align: center;
-            font-size: 8pt;
+        }
+        .section-header {
+            background-color: #f2f2f2;
+            text-align: center;
             font-weight: bold;
+            font-size: 10px;
             text-transform: uppercase;
+            border: 1px solid #4A148C;
+            color: #4A148C;
+            padding: 4px;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            page-break-after: avoid;
         }
-        .data-table td {
-            padding: 4px 6px;
-            border: 1px solid #D0D0D0;
+        .lbl {
+            background-color: #fff;
+            font-size: 9px;
+            color: #4A148C;
+            font-weight: bold;
             text-align: center;
-            vertical-align: middle;
         }
-        .data-table tr:nth-child(even) {
-            background: #FAFAFA;
+        .val {
+            background-color: #ffffff;
+            text-transform: uppercase;
+            color: #000;
+            font-weight: bold;
+            text-align: center;
         }
-
-        /* ─── DATOS PERSONALES ─── */
-        .info-grid {
+        .val-bold {
+            background-color: #ffffff;
+            text-transform: uppercase;
+            font-weight: bold;
+            font-size: 11px;
+            color: #000;
+        }
+        .header-table {
+            margin-bottom: 25px;
+            border: none !important;
+        }
+        .header-table td {
+            border: none !important;
+            padding: 0;
+        }
+        .univ-name {
+            font-size: 14px;
+            text-decoration: underline;
+            font-weight: bold;
+            color: #4A148C;
+        }
+        .photo-box {
+            border: 1.5px solid #4A148C;
+            width: 95px;
+            height: 120px;
+            text-align: center;
+            margin-left: auto;
+            background-color: #eee;
+            overflow: hidden;
+            position: relative;
+        }
+        .photo-box img {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
+            height: 100%;
+            display: block;
         }
-        .info-grid td {
-            padding: 3px 6px;
-            border: 1px solid #D0D0D0;
-            font-size: 9pt;
-        }
-        .info-grid .label {
-            background: #F3E8FC;
-            color: #4A0E78;
-            font-weight: bold;
-            width: 25%;
-            font-size: 8pt;
-        }
-        .info-grid .value {
-            width: 25%;
-        }
-
-        /* ─── QR ─── */
-        .qr-section {
-            text-align: center;
-            margin-top: 20px;
-            page-break-inside: avoid;
-        }
-        .qr-section p {
-            font-size: 8pt;
+        .no-photo {
+            font-size: 8px;
             color: #666;
-            margin-top: 4px;
+            font-style: italic;
+            line-height: 12px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
         }
-
-        /* ─── ADJUNTOS ─── */
-        .attachment-page {
-            page-break-before: always;
-        }
-        .attachment-header {
-            text-align: center;
-            font-size: 12pt;
+        .sub-title {
+            font-size: 10px;
             font-weight: bold;
-            color: #4A0E78;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #4A0E78;
-            padding-bottom: 5px;
+            text-decoration: underline;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: block;
+            color: #4A148C;
+            page-break-after: avoid;
         }
-        .attachment-item {
-            margin-bottom: 10px;
+        .registro-block {
             page-break-inside: avoid;
+            margin-bottom: 15px;
         }
-        .attachment-label {
-            font-size: 9pt;
-            font-weight: bold;
-            color: #4A0E78;
-            margin-bottom: 3px;
+        .qr-cell {
+            width: 50px;
+            padding: 2px !important;
         }
-        .attachment-img {
-            max-width: 100%;
-            max-height: 700px;
-            border: 1px solid #ccc;
-        }
-
-        .text-left { text-align: left; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .fw-bold { font-weight: bold; }
-        .small { font-size: 8pt; color: #666; }
-        .no-data { color: #999; font-style: italic; }
-
-        .footer-line {
-            border-top: 2px solid #4A0E78;
-            margin-top: 15px;
-            padding-top: 5px;
-            text-align: center;
-            font-size: 7pt;
-            color: #888;
+        .qr-cell img {
+            width: 45px;
+            height: 45px;
+            display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
 <body>
+<div class="page">
 
-    {{-- ═══════════════════════════════ --}}
     {{-- ENCABEZADO --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="header">
-        <h1>UNITEPC</h1>
-        <h2>UNIVERSIDAD TÉCNICA PRIVADA COSMOS</h2>
-        <h3>CURRICULUM VITAE NORMALIZADO</h3>
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- ESCUDO + NOMBRE + FOTO --}}
-    {{-- ═══════════════════════════════ --}}
-    <table class="identity-bar">
+    <table class="header-table">
         <tr>
-            <td style="width: 100px;">
-                @if(file_exists(public_path('unitepc_escudo.png')))
-                    <img src="{{ public_path('unitepc_escudo.png') }}" class="escudo-img" alt="Escudo UNITEPC">
-                @endif
-            </td>
-            <td style="text-align: center;">
-                <div class="identity-name" style="font-size: 11pt; color: #4A0E78; text-transform: uppercase;">
-                    FOTOGRAFÍA<br>PERSONAL:
+            <td colspan="3" style="text-align: center; vertical-align: middle; padding-bottom: 15px; color: #4A148C;">
+                <div class="univ-name">UNIVERSIDAD TÉCNICA PRIVADA COSMOS "UNITEPC"</div>
+                <div style="margin-top: 4px; font-weight: bold; font-size: 11px;">
+                    DIRECCIÓN DE PLANIFICACIÓN Y EVALUACIÓN INSTITUCIONAL
+                </div>
+                <div style="margin-top: 8px; font-size: 13px; text-decoration: underline; font-weight: bold;">
+                    CURRÍCULUM VITAE NORMALIZADO
                 </div>
             </td>
-            <td style="width: 110px; text-align: right;">
-                @if($persona->foto && file_exists(public_path(str_replace('/storage/', 'storage/', $persona->foto))))
-                    <img src="{{ public_path(str_replace('/storage/', 'storage/', $persona->foto)) }}" class="foto-img" alt="Foto">
-                @else
-                    <div class="foto-placeholder">SIN FOTO</div>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: left; vertical-align: middle;">
+                @php
+                    $escudoPath = public_path('unitepc_escudo.png');
+                    $escudoBase64 = file_exists($escudoPath) ? base64_encode(file_get_contents($escudoPath)) : '';
+                @endphp
+                @if($escudoBase64)
+                    <img src="data:image/png;base64,{{ $escudoBase64 }}" style="width: 110px; height: auto;">
                 @endif
+            </td>
+            <td style="width: 60%;"></td>
+            <td style="width: 20%; text-align: right; vertical-align: middle;">
+                <div class="photo-box">
+                    @php
+                        $fotoBase64 = '';
+                        if (!empty($persona->foto)) {
+                            $cleanFoto = str_replace('/storage/', '', $persona->foto);
+                            $paths = [ public_path('storage/' . $cleanFoto), storage_path('app/public/' . $cleanFoto), storage_path('app/' . $cleanFoto) ];
+                            foreach ($paths as $path) { if (file_exists($path)) { $fotoBase64 = base64_encode(file_get_contents($path)); break; } }
+                        }
+                    @endphp
+                    @if($fotoBase64)
+                        <img src="data:image/jpeg;base64,{{ $fotoBase64 }}">
+                    @else
+                        <div class="no-photo">FOTOGRAFÍA<br>PERSONAL</div>
+                    @endif
+                </div>
             </td>
         </tr>
     </table>
 
-    {{-- ═══════════════════════════════ --}}
     {{-- I. DATOS PERSONALES --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">I. DATOS PERSONALES</div>
-        <table class="info-grid">
-            <tr>
-                <td class="label">Primer Apellido</td>
-                <td class="value">{{ $persona->primer_apellido ?? '-' }}</td>
-                <td class="label">Segundo Apellido</td>
-                <td class="value">{{ $persona->segundo_apellido ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Nombres</td>
-                <td class="value">{{ $persona->nombres ?? '-' }}</td>
-                <td class="label">Cédula de Identidad</td>
-                <td class="value">{{ $persona->ci ?? '-' }} {{ $persona->complemento ? '- '.$persona->complemento : '' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Expedido en</td>
-                <td class="value">{{ $persona->expedido->nombre ?? '-' }}</td>
-                <td class="label">Sexo</td>
-                <td class="value">{{ $persona->sexo->sexo ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Fecha de Nacimiento</td>
-                <td class="value">{{ $persona->fecha_nacimiento ? \Carbon\Carbon::parse($persona->fecha_nacimiento)->format('d/m/Y') : '-' }}</td>
-                <td class="label">Estado Civil</td>
-                <td class="value">{{ $persona->estado_civil ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Nacionalidad</td>
-                <td class="value">{{ $persona->nacionalidad->gentilicio ?? '-' }}</td>
-                <td class="label">País</td>
-                <td class="value">{{ $persona->pais->nombre ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Ciudad de Residencia</td>
-                <td class="value">{{ $persona->ciudad->nombre ?? '-' }}</td>
-                <td class="label">Dirección</td>
-                <td class="value">{{ $persona->direccion_domicilio ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Celular Personal</td>
-                <td class="value">{{ $persona->celular_personal ?? '-' }}</td>
-                <td class="label">Correo Personal</td>
-                <td class="value">{{ $persona->correo_personal ?? '-' }}</td>
-            </tr>
-            @if($empleado)
-            <tr>
-                <td class="label">Celular Institucional</td>
-                <td class="value">{{ $empleado->celular_institucional ?? '-' }}</td>
-                <td class="label">Correo Institucional</td>
-                <td class="value">{{ $empleado->correo_institucional ?? '-' }}</td>
-            </tr>
-            @endif
-        </table>
-    </div>
+    <table style="margin-top: 10px;">
+        <tr><td colspan="4" class="section-header" style="margin-top: 0; margin-bottom: 0;">I. DATOS PERSONALES</td></tr>
+        <tr><td class="lbl">Primer Apellido</td><td class="lbl">Segundo Apellido</td><td class="lbl">Nombres</td><td class="lbl">N° Documento (CI)</td></tr>
+        <tr><td class="val-bold">{{ $persona->primer_apellido }}</td><td class="val">{{ $persona->segundo_apellido ?: '--' }}</td><td class="val-bold">{{ $persona->nombres }}</td><td class="val">{{ $persona->ci }} {{ $persona->expedido->sigla ?? '' }}</td></tr>
+        <tr><td class="lbl">Sexo</td><td class="lbl" colspan="2">Fecha de nacimiento (Día/Mes/Año)</td><td class="lbl">Nacionalidad</td></tr>
+        <tr><td class="val">{{ ($persona->sexo->nombre ?? '') == 'Masculino' ? 'MASCULINO' : 'FEMENINO' }}</td><td class="val" colspan="2"><strong>{{ $persona->fecha_nacimiento ? \Carbon\Carbon::parse($persona->fecha_nacimiento)->format('d/m/Y') : '---' }}</strong></td><td class="val">{{ $persona->nacionalidad->nombre ?? 'BOLIVIANA' }}</td></tr>
+        <tr><td class="lbl" colspan="2">Dirección de Domicilio</td><td class="lbl">Ciudad / Sede de Origen</td><td class="lbl">País</td></tr>
+        <tr><td class="val" colspan="2">{{ $persona->direccion_domicilio ?: 'N/R' }}</td><td class="val">{{ $persona->expedido->nombre ?? ($persona->ciudad->departamento->nombre ?? 'N/R') }} / {{ $persona->ciudad->nombre ?? 'COCHABAMBA' }}</td><td class="val">{{ $persona->pais->nombre ?? 'BOLIVIA' }}</td></tr>
+        <tr><td class="lbl" colspan="4">Dirección Electrónica Institucional / Personal</td></tr>
+        <tr><td class="val" colspan="4" style="text-transform: none;">{{ $persona->correo_personal ?: '---' }}</td></tr>
+    </table>
 
-    {{-- ═══════════════════════════════ --}}
     {{-- II. FORMACIÓN ACADÉMICA --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">II. FORMACIÓN ACADÉMICA</div>
+    <div class="section-header">II. FORMACIÓN ACADÉMICA</div>
+    <span class="sub-title">A. ESTUDIOS DE PREGRADO (LICENCIATURAS / TÉCNICOS)</span>
+    @if(count($persona->formacionPregrado) > 0)
+        @foreach($persona->formacionPregrado as $i => $m)
+            <div class="registro-block">
+                <table>
+                    <tr><td class="lbl" style="width: 40%;">{{ $i+1 }}. Carrera / Profesión</td><td class="lbl" style="width: 15%;">Fecha Diploma</td><td class="lbl" style="width: 15%;">Fecha Título</td><td class="lbl" style="width: 15%;">Diploma</td><td class="lbl" style="width: 15%;">Título P.N.</td></tr>
+                    <tr>
+                        <td class="val-bold">{{ $m->carrera ?? '--' }}</td>
+                        <td class="val">{{ $m->fecha_diploma ? \Carbon\Carbon::parse($m->fecha_diploma)->format('d/m/Y') : '---' }}</td>
+                        <td class="val-bold">{{ $m->fecha_titulo ? \Carbon\Carbon::parse($m->fecha_titulo)->format('d/m/Y') : '---' }}</td>
+                        <td class="qr-cell">@if($m->archivo_diploma)<img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(45)->margin(0)->generate(config('app.url').'/'.str_replace('/storage/','',$m->archivo_diploma))) }}">@endif</td>
+                        <td class="qr-cell">@if($m->archivo_titulo)<img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(45)->margin(0)->generate(config('app.url').'/'.str_replace('/storage/','',$m->archivo_titulo))) }}">@endif</td>
+                    </tr>
+                    <tr><td class="lbl">Universidad / Institución</td><td class="lbl">Grado Académico</td><td class="lbl" colspan="3">Ubicación (Departamento / País)</td></tr>
+                    <tr><td class="val">{{ $m->institucion ?? '--' }}</td><td class="val">{{ $m->nivel ?? '---' }}</td><td class="val" colspan="3">{{ $m->depto->nombre ?? 'N/R' }} / {{ $m->depto->pais->nombre ?? 'BOLIVIA' }}</td></tr>
+                </table>
+            </div>
+        @endforeach
+    @endif
 
-        {{-- Pregrado --}}
-        @if($persona->formacionPregrado && $persona->formacionPregrado->count())
-            <div class="section-subtitle">(Títulos de Pregrado)</div>
-            <table class="data-table">
-                <thead>
+    <span class="sub-title" style="margin-top: 15px;">B. ESTUDIOS DE POSGRADO</span>
+    @if(count($persona->formacionPostgrado) > 0)
+        @foreach($persona->formacionPostgrado as $i => $m)
+            <div class="registro-block">
+                <table>
+                    <tr><td class="lbl" style="width: 45%;">{{ $i+1 }}. Nombre del Programa</td><td class="lbl" style="width: 25%;">Fecha Certificación</td><td class="lbl" style="width: 15%;">Tipo</td><td class="lbl" style="width: 15%;">Respaldo</td></tr>
                     <tr>
-                        <th>Nivel Académico</th>
-                        <th>Universidad / Institución</th>
-                        <th>Carrera / Profesión</th>
-                        <th>Fecha Diploma</th>
-                        <th>Fecha Título</th>
-                        <th>Departamento</th>
+                        <td class="val-bold">{{ $m->nombre_programa ?? '--' }}</td>
+                        <td class="val">{{ $m->fecha_certificacion ? \Carbon\Carbon::parse($m->fecha_certificacion)->format('d/m/Y') : ($m->fecha_diploma ? \Carbon\Carbon::parse($m->fecha_diploma)->format('d/m/Y') : '---') }}</td>
+                        <td class="val">{{ $m->tipo ?? '---' }}</td>
+                        <td class="qr-cell">@if($m->archivo_respaldo)<img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(45)->margin(0)->generate(config('app.url').'/'.str_replace('/storage/','',$m->archivo_respaldo))) }}">@endif</td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->formacionPregrado as $fp)
-                    <tr>
-                        <td>{{ strtoupper($fp->nivel ?? '-') }}</td>
-                        <td>{{ $fp->institucion ?? '-' }}</td>
-                        <td>{{ $fp->carrera ?? '-' }}</td>
-                        <td>{{ $fp->fecha_diploma ? \Carbon\Carbon::parse($fp->fecha_diploma)->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $fp->fecha_titulo ? \Carbon\Carbon::parse($fp->fecha_titulo)->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $fp->depto->nombre ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
+                    <tr><td class="lbl" colspan="2">Universidad / Institución</td><td class="lbl" colspan="2">Ubicación (Departamento / País)</td></tr>
+                    <tr><td class="val" colspan="2">{{ $m->institucion ?? '--' }}</td><td class="val" colspan="2">{{ $m->depto->nombre ?? 'N/R' }} / {{ $m->depto->pais->nombre ?? 'BOLIVIA' }}</td></tr>
+                </table>
+            </div>
+        @endforeach
+    @endif
 
-        {{-- Postgrado --}}
-        @if($persona->formacionPostgrado && $persona->formacionPostgrado->count())
-            <div class="section-subtitle">(Formación de Postgrado)</div>
-            <table class="data-table">
-                <thead>
+    {{-- III. TRAYECTORIA ACADEMICA Y PROFESIONAL --}}
+    <div class="section-header">III. TRAYECTORIA ACADEMICA Y PROFESIONAL</div>
+    <span class="sub-title">A. DOCENCIA UNIVERSITARIA</span>
+    @if(count($persona->experienciaDocente) > 0)
+        @foreach($persona->experienciaDocente as $i => $m)
+            <div class="registro-block">
+                <table>
+                    <tr><td class="lbl" style="width: 35%;">{{ $i+1 }}. Universidad</td><td class="lbl" style="width: 20%;">Carrera / Facultad</td><td class="lbl" style="width: 20%;">Ubicación</td><td class="lbl" style="width: 13%;">Gestión</td><td class="lbl" style="width: 12%;">Resp.</td></tr>
                     <tr>
-                        <th>Tipo</th>
-                        <th>Programa</th>
-                        <th>Institución</th>
-                        <th>Fecha Diploma</th>
-                        <th>Departamento</th>
+                        <td class="val-bold">{{ $m->institucion ?? '--' }}</td>
+                        <td class="val">{{ $m->carrera ?? '---' }}</td>
+                        <td class="val">{{ $m->depto->nombre ?? '---' }} / {{ $m->depto->pais->nombre ?? 'BOLIVIA' }}</td>
+                        <td class="val">{{ $m->gestion_periodo ?? '---' }}</td>
+                        <td class="qr-cell">@if($m->archivo_respaldo)<img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(45)->margin(0)->generate(config('app.url').'/'.str_replace('/storage/','',$m->archivo_respaldo))) }}">@endif</td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->formacionPostgrado as $fpo)
-                    <tr>
-                        <td>{{ strtoupper($fpo->tipo ?? '-') }}</td>
-                        <td>{{ $fpo->nombre_programa ?? '-' }}</td>
-                        <td>{{ $fpo->institucion ?? '-' }}</td>
-                        <td>{{ $fpo->fecha_diploma ? \Carbon\Carbon::parse($fpo->fecha_diploma)->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $fpo->depto->nombre ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
+                    <tr><td class="lbl" colspan="5">Asignaturas Desarrolladas</td></tr>
+                    <tr><td class="val" colspan="5" style="text-transform: none; font-weight: normal; font-style: italic;">{{ $m->materia ?? $m->asignaturas ?? '---' }}</td></tr>
+                </table>
+            </div>
+        @endforeach
+    @endif
 
-        @if((!$persona->formacionPregrado || !$persona->formacionPregrado->count()) && (!$persona->formacionPostgrado || !$persona->formacionPostgrado->count()))
-            <p class="no-data" style="padding: 5px 10px;">Sin registros de formación académica.</p>
+    <span class="sub-title" style="margin-top: 15px;">B. EJERCICIO PROFESIONAL</span>
+    @if(count($persona->experienciaProfesional) > 0)
+        @foreach($persona->experienciaProfesional as $i => $m)
+            <div class="registro-block">
+                <table>
+                    <tr><td class="lbl" style="width: 30%;">{{ $i+1 }}. Empresa / Institución</td><td class="lbl" style="width: 20%;">Cargo</td><td class="lbl" style="width: 20%;">Ubicación</td><td class="lbl" style="width: 20%;">Periodo</td><td class="lbl" style="width: 10%;">Resp.</td></tr>
+                    <tr>
+                        <td class="val-bold">{{ $m->empresa ?? '--' }}</td>
+                        <td class="val">{{ $m->cargo ?? '--' }}</td>
+                        <td class="val">{{ $m->depto->nombre ?? '---' }} / {{ $m->depto->pais->nombre ?? 'BOLIVIA' }}</td>
+                        <td class="val" style="font-size: 8px;">{{ $m->fecha_inicio ? \Carbon\Carbon::parse($m->fecha_inicio)->format('d/m/Y') : '---' }} a {{ $m->fecha_fin ? \Carbon\Carbon::parse($m->fecha_fin)->format('d/m/Y') : 'ACTUAL' }}</td>
+                        <td class="qr-cell">@if($m->archivo_respaldo)<img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(45)->margin(0)->generate(config('app.url').'/'.str_replace('/storage/','',$m->archivo_respaldo))) }}">@endif</td>
+                    </tr>
+                </table>
+            </div>
+        @endforeach
+    @endif
+
+    {{-- IV. CAPACITACIONES --}}
+    <div class="section-header">IV. CAPACITACIONES Y CURSOS RECIENTES</div>
+    @if(count($persona->capacitaciones) > 0)
+        @foreach($persona->capacitaciones as $i => $m)
+            <div class="registro-block">
+                <table>
+                    <tr><td class="lbl" style="width: 35%;">{{ $i+1 }}. Nombre del Curso / Taller</td><td class="lbl" style="width: 25%;">Institución</td><td class="lbl" style="width: 20%;">Ubicación</td><td class="lbl" style="width: 10%;">Hrs.</td><td class="lbl" style="width: 10%;">Resp.</td></tr>
+                    <tr>
+                        <td class="val-bold">{{ $m->nombre_curso ?? '--' }}</td>
+                        <td class="val">{{ $m->institucion ?: '---' }}</td>
+                        <td class="val">{{ $m->depto->nombre ?? '---' }} / {{ $m->depto->pais->nombre ?? 'BOLIVIA' }}</td>
+                        <td class="val">{{ $m->horas_academicas ?? $m->carga_horaria ?? 'N/R' }}</td>
+                        <td class="qr-cell">@if($m->archivo_respaldo)<img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(45)->margin(0)->generate(config('app.url').'/'.str_replace('/storage/','',$m->archivo_respaldo))) }}">@endif</td>
+                    </tr>
+                    <tr><td class="lbl" colspan="5">Fecha de Emisión / Certificación</td></tr>
+                    <tr><td class="val" colspan="5">{{ $m->fecha ? \Carbon\Carbon::parse($m->fecha)->format('d/m/Y') : '---' }}</td></tr>
+                </table>
+            </div>
+        @endforeach
+    @endif
+
+    {{-- V. PRODUCCION INTELECTUAL --}}
+    <div class="section-header">V. PRODUCCIÓN INTELECTUAL (LIBROS / ARTÍCULOS)</div>
+    @if(count($persona->produccionIntelectual) > 0)
+        @foreach($persona->produccionIntelectual as $i => $m)
+            <div class="registro-block">
+                <table style="table-layout: fixed;">
+                    <tr>
+                        <th class="lbl" style="width: 30%;">{{ $i+1 }}. Título de la Obra</th>
+                        <th class="lbl" style="width: 10%;">Tipo</th>
+                        <th class="lbl" style="width: 20%;">Editorial / Medio</th>
+                        <th class="lbl" style="width: 20%;">Ubicación (Depto/País)</th>
+                        <th class="lbl" style="width: 12%;">Fecha / Año</th>
+                        <th class="lbl" style="width: 8%;">Resp.</th>
+                    </tr>
+                    <tr>
+                        <td class="val-bold" style="font-size: 8px;">{{ $m->titulo ?? '--' }}</td>
+                        <td class="val" style="font-size: 8px;">{{ $m->tipo_produccion ?? $m->tipo ?? '---' }}</td>
+                        <td class="val" style="font-size: 8px;">{{ $m->editorial ?: '---' }}</td>
+                        <td class="val" style="font-size: 8px;">{{ $m->depto->nombre ?? '---' }} / {{ $m->depto->pais->nombre ?? 'ARGENTINA' }}</td>
+                        <td class="val" style="font-size: 8px;">{{ $m->fecha ? \Carbon\Carbon::parse($m->fecha)->format('d/m/Y') : ($m->anio ?: '---') }}</td>
+                        <td class="qr-cell">@if($m->archivo_respaldo)<img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(45)->margin(0)->generate(config('app.url').'/'.str_replace('/storage/','',$m->archivo_respaldo))) }}">@endif</td>
+                    </tr>
+                </table>
+            </div>
+        @endforeach
+    @endif
+
+    {{-- VI. RECONOCIMIENTOS --}}
+    <div class="section-header">VI. RECONOCIMIENTOS Y DISTINCIONES</div>
+    @if(count($persona->reconocimientos) > 0)
+        @foreach($persona->reconocimientos as $i => $m)
+            <div class="registro-block">
+                <table>
+                    <tr><td class="lbl" style="width: 45%;">{{ $i+1 }}. Título o Mérito Obtenido</td><td class="lbl" style="width: 35%;">Institución Otorgante</td><td class="lbl" style="width: 20%;">Fecha / Gestión</td></tr>
+                    <tr><td class="val-bold">{{ $m->titulo_premio ?? '--' }}</td><td class="val">{{ $m->institucion_otorgante ?: '---' }}</td><td class="val">{{ $m->fecha ? \Carbon\Carbon::parse($m->fecha)->format('d/m/Y') : '---' }}</td></tr>
+                </table>
+            </div>
+        @endforeach
+    @endif
+
+    {{-- VII. IDIOMAS --}}
+    <div class="section-header">VII. CONOCIMIENTO DE IDIOMAS</div>
+    <table>
+        <tr><td class="lbl">Idioma</td><td class="lbl">Lectura</td><td class="lbl">Escritura</td><td class="lbl">Habla</td></tr>
+        @if(count($persona->idiomas) > 0)
+            @foreach($persona->idiomas as $m)
+                <tr><td class="val">{{ $m->idioma }}</td><td class="val">{{ $m->nivel_lee }}</td><td class="val">{{ $m->nivel_escritura }}</td><td class="val">{{ $m->nivel_habla }}</td></tr>
+            @endforeach
         @endif
+    </table>
+
+    {{-- FIRMAS Y QR FINAL --}}
+    <div class="footer-qr-container">
+        <table style="border: none !important; margin-top: 30px;">
+            <tr>
+                <td style="width: 35%; border: none !important;">
+                    <div style="border-top: 1px solid #4A148C; width: 160px; margin: 0 auto; margin-top: 60px;"></div>
+                    <div style="font-weight: bold; font-size: 9pt; color: #4A148C;">FIRMA DEL INTERESADO</div>
+                </td>
+                <td style="width: 30%; border: none !important;">
+                    <img src="data:image/svg+xml;base64,{{ base64_encode($qrCode) }}" style="width: 100px; height: 100px;">
+                    <div style="font-size: 7pt; color: #4A148C; font-weight: bold; margin-top: 5px;">VERIFICACIÓN DIGITAL</div>
+                </td>
+                <td style="width: 35%; border: none !important;">
+                    <div style="margin-top: 60px; font-weight: bold; font-size: 9pt; color: #4A148C;">FECHA DE EMISIÓN: {{ now()->format('d/m/Y') }}</div>
+                </td>
+            </tr>
+        </table>
+        <div style="text-align: center; font-size: 7px; color: #aaa; margin-top: 40px; font-style: italic; text-transform: uppercase;">SIGETH - UNITEPC</div>
     </div>
 
-    {{-- ═══════════════════════════════ --}}
-    {{-- III. EXPERIENCIA PROFESIONAL --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">III. EXPERIENCIA PROFESIONAL</div>
+</div>
 
-        @if($persona->experienciaProfesional && $persona->experienciaProfesional->count())
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Cargo</th>
-                        <th>Empresa / Institución</th>
-                        <th>Fecha Inicio</th>
-                        <th>Fecha Fin</th>
-                        <th>Departamento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->experienciaProfesional as $ep)
-                    <tr>
-                        <td>{{ $ep->cargo ?? '-' }}</td>
-                        <td>{{ $ep->empresa ?? '-' }}</td>
-                        <td>{{ $ep->fecha_inicio ? \Carbon\Carbon::parse($ep->fecha_inicio)->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $ep->fecha_fin ? \Carbon\Carbon::parse($ep->fecha_fin)->format('d/m/Y') : 'Actual' }}</td>
-                        <td>{{ $ep->depto->nombre ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p class="no-data" style="padding: 5px 10px;">Sin registros de experiencia profesional.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- IV. EXPERIENCIA DOCENTE --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">IV. EXPERIENCIA DOCENTE</div>
-
-        @if($persona->experienciaDocente && $persona->experienciaDocente->count())
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Institución</th>
-                        <th>Carrera</th>
-                        <th>Asignaturas</th>
-                        <th>Gestión / Periodo</th>
-                        <th>Departamento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->experienciaDocente as $ed)
-                    <tr>
-                        <td>{{ $ed->institucion ?? '-' }}</td>
-                        <td>{{ $ed->carrera ?? '-' }}</td>
-                        <td class="text-left">{{ $ed->asignaturas ?? '-' }}</td>
-                        <td>{{ $ed->gestion_periodo ?? '-' }}</td>
-                        <td>{{ $ed->depto->nombre ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p class="no-data" style="padding: 5px 10px;">Sin registros de experiencia docente.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- V. CAPACITACIONES --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">V. CAPACITACIONES Y CURSOS</div>
-
-        @if($persona->capacitaciones && $persona->capacitaciones->count())
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Nombre del Curso</th>
-                        <th>Institución</th>
-                        <th>Fecha</th>
-                        <th>Carga Horaria</th>
-                        <th>Departamento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->capacitaciones as $cap)
-                    <tr>
-                        <td>{{ $cap->nombre_curso ?? '-' }}</td>
-                        <td>{{ $cap->institucion ?? '-' }}</td>
-                        <td>{{ $cap->fecha ? \Carbon\Carbon::parse($cap->fecha)->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $cap->carga_horaria ?? 0 }} hrs</td>
-                        <td>{{ $cap->depto->nombre ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p class="no-data" style="padding: 5px 10px;">Sin registros de capacitaciones.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- VI. PRODUCCIÓN INTELECTUAL --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">VI. PRODUCCIÓN INTELECTUAL</div>
-
-        @if($persona->produccionIntelectual && $persona->produccionIntelectual->count())
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Tipo</th>
-                        <th>Título</th>
-                        <th>Fecha</th>
-                        <th>Editorial</th>
-                        <th>Departamento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->produccionIntelectual as $pi)
-                    <tr>
-                        <td>{{ strtoupper($pi->tipo ?? '-') }}</td>
-                        <td class="text-left">{{ $pi->titulo ?? '-' }}</td>
-                        <td>{{ $pi->fecha ? \Carbon\Carbon::parse($pi->fecha)->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $pi->editorial ?? '-' }}</td>
-                        <td>{{ $pi->depto->nombre ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p class="no-data" style="padding: 5px 10px;">Sin registros de producción intelectual.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- VII. RECONOCIMIENTOS --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">VII. RECONOCIMIENTOS Y PREMIOS</div>
-
-        @if($persona->reconocimientos && $persona->reconocimientos->count())
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Título / Premio</th>
-                        <th>Institución Otorgante</th>
-                        <th>Fecha</th>
-                        <th>Lugar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->reconocimientos as $rec)
-                    <tr>
-                        <td>{{ $rec->titulo_premio ?? '-' }}</td>
-                        <td>{{ $rec->institucion_otorgante ?? '-' }}</td>
-                        <td>{{ $rec->fecha ? \Carbon\Carbon::parse($rec->fecha)->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $rec->lugar ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p class="no-data" style="padding: 5px 10px;">Sin registros de reconocimientos.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- VIII. IDIOMAS --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="section">
-        <div class="section-title">VIII. IDIOMAS</div>
-
-        @if($persona->idiomas && $persona->idiomas->count())
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Idioma</th>
-                        <th>Nivel Habla</th>
-                        <th>Nivel Escritura</th>
-                        <th>Nivel Lectura</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($persona->idiomas as $idi)
-                    <tr>
-                        <td>{{ $idi->idioma ?? '-' }}</td>
-                        <td>{{ $idi->nivel_habla ?? '-' }}</td>
-                        <td>{{ $idi->nivel_escritura ?? '-' }}</td>
-                        <td>{{ $idi->nivel_lee ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p class="no-data" style="padding: 5px 10px;">Sin registros de idiomas.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- QR DE VERIFICACIÓN --}}
-    {{-- ═══════════════════════════════ --}}
-    <div class="qr-section">
-        <div style="border: 1px solid #ddd; display: inline-block; padding: 8px;">
-            {!! $qrCode !!}
-        </div>
-        <p>Código QR de verificación</p>
-        <p>Generado el {{ now()->format('d/m/Y H:i') }} | ID: {{ $persona->id }}</p>
-    </div>
-
-    <div class="footer-line">
-        UNITEPC - Universidad Técnica Privada Cosmos | Sistema de Gestión de Talento Humano (SIGETH) | Documento generado automáticamente
-    </div>
-
-    {{-- ═══════════════════════════════ --}}
-    {{-- PÁGINAS DE RESPALDOS (ADJUNTOS) --}}
-    {{-- ═══════════════════════════════ --}}
     @if(count($adjuntos) > 0)
-        <div class="attachment-page">
-            <div class="attachment-header">DOCUMENTOS DE RESPALDO Y ANEXOS</div>
-
+        <div style="page-break-before: always;">
+            <div class="section-header">ANEXOS Y DOCUMENTACIÓN DE RESPALDO</div>
             @foreach($adjuntos as $adj)
-                @if($adj['type'] === 'image')
-                    <div class="attachment-item">
-                        <div class="attachment-label">{{ $adj['label'] }}</div>
-                        <img src="{{ $adj['path'] }}" class="attachment-img" alt="{{ $adj['label'] }}">
-                    </div>
-                @else
-                    <div class="attachment-item">
-                        <div class="attachment-label">{{ $adj['label'] }}</div>
-                        <p class="small" style="padding: 3px; border: 1px dashed #6A37A3; background: #FFF4FA; color: #4A0E78;">
-                            ⚠️ El PDF adjunto contiene compresión avanzada no soportada por el motor de fusión. <br>
-                            📄 Archivo original conservado en el sistema: <strong>{{ $adj['filename'] }}</strong>
-                        </p>
+                @if($adj['type'] === 'image' && file_exists($adj['path']))
+                    <div class="registro-block" style="page-break-inside: avoid; margin-bottom: 25px;">
+                        <div class="sub-title">{{ $adj['label'] }}</div>
+                        <img src="{{ $adj['path'] }}" style="max-width: 100%; height: auto; border: 1px solid #4A148C;">
                     </div>
                 @endif
             @endforeach
