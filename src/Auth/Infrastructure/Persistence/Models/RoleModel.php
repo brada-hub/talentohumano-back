@@ -15,6 +15,11 @@ class RoleModel extends Model
         'sistema_id',
     ];
 
+    public function sistema()
+    {
+        return $this->belongsTo(SistemaModel::class, 'sistema_id', 'id_sistema');
+    }
+
     public function permissions()
     {
         return $this->belongsToMany(
@@ -22,6 +27,16 @@ class RoleModel extends Model
             'role_has_permissions',
             'role_id',
             'permission_id'
+        );
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(
+            UserModel::class,
+            'user_has_roles',
+            'role_id',
+            'user_id'
         );
     }
 }

@@ -56,7 +56,9 @@ return new class extends Migration
         Schema::create('sedes', function (Blueprint $table) {
             $table->id('id_sede');
             $table->string('nombre');
-            $table->foreignId('id_ciudad')->constrained('ciudades', 'id_ciudad');
+            $table->string('sigla', 10)->nullable();
+            $table->boolean('activo')->default(true);
+            $table->foreignId('id_ciudad')->nullable()->constrained('ciudades', 'id_ciudad');
             $table->timestamps();
         });
 

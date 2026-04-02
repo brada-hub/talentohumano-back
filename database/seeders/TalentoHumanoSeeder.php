@@ -48,10 +48,31 @@ class TalentoHumanoSeeder extends Seeder
             ['descripcion' => 'Planta Docente']
         );
 
-        // Sedes
-        SedeModel::firstOrCreate(['nombre' => 'Campus Central - Cochabamba'], ['id_ciudad' => 1]);
-        SedeModel::firstOrCreate(['nombre' => 'Sub-sede - La Paz'], ['id_ciudad' => 2]);
-        SedeModel::firstOrCreate(['nombre' => 'Sub-sede - Santa Cruz'], ['id_ciudad' => 3]);
+        // Sedes (Legacy IDs sync from screenshot)
+        $sedesData = [
+            ['id_sede' => 1, 'nombre' => 'LA PAZ', 'sigla' => 'LPZ'],
+            ['id_sede' => 2, 'nombre' => 'EL ALTO', 'sigla' => 'EAL'],
+            ['id_sede' => 3, 'nombre' => 'COCHABAMBA', 'sigla' => 'COC'],
+            ['id_sede' => 4, 'nombre' => 'IVIRGARZAMA', 'sigla' => 'IVI'],
+            ['id_sede' => 5, 'nombre' => 'GUAYARAMERIN', 'sigla' => 'GYA'],
+            ['id_sede' => 6, 'nombre' => 'SANTA CRUZ', 'sigla' => 'SCZ'],
+            ['id_sede' => 7, 'nombre' => 'PUERTO QUIJARRO', 'sigla' => 'PQJ'],
+            ['id_sede' => 8, 'nombre' => 'COBIJA', 'sigla' => 'CBJ'],
+            ['id_sede' => 9, 'nombre' => 'NACIONAL', 'sigla' => 'NAC'],
+        ];
+
+        foreach ($sedesData as $sede) {
+            SedeModel::updateOrCreate(
+                ['id_sede' => $sede['id_sede']],
+                [
+                    'nombre' => $sede['nombre'],
+                    'sigla'  => $sede['sigla'],
+                    'activo' => true,
+                    // Note: id_ciudad would normally be linked here, but since migration made it nullable, 
+                    // we skip it to avoid ID mismatch with existing geo data.
+                ]
+            );
+        }
 
         // Areas
         $rectorado = AreaModel::firstOrCreate(['nombre_area' => 'Rectorado'], ['tipo_area' => 'Administrativa']);

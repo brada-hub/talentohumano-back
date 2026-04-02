@@ -11,7 +11,7 @@ class EloquentUserRepository implements UserRepositoryInterface
 {
     public function findByUsername(string $username): ?User
     {
-        $model = UserModel::with(['roles.permissions'])->where('username', $username)->first();
+        $model = UserModel::with(['roles.permissions', 'roles.sistema'])->where('username', $username)->first();
 
         if (!$model) {
             return null;

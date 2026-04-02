@@ -9,6 +9,11 @@ use Laravel\Sanctum\HasApiTokens;
 class UserModel extends Authenticatable
 {
     use HasApiTokens, Notifiable;
+    
+    public function getMorphClass()
+    {
+        return 'user';
+    }
 
     protected $table = 'users';
     protected $primaryKey = 'id_user';

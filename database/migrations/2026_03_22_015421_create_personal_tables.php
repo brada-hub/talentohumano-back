@@ -39,7 +39,7 @@ return new class extends Migration
             $table->foreignId('id_ciudad')->constrained('ciudades', 'id_ciudad');
             $table->foreignId('id_pais')->constrained('paises', 'id_pais');
             $table->string('foto')->nullable();
-            $table->string('estado_onboarding')->default('sin_iniciar');
+            $table->enum('estado_onboarding', ['sin_iniciar', 'en_progreso', 'completado', 'pendiente_contrato'])->default('sin_iniciar');
             $table->boolean('activo')->default(true);
             $table->timestamps();
         });

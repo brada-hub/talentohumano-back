@@ -35,4 +35,9 @@ class TalentoHumanoController extends Controller
             'paises'            => PaisModel::all(),
         ], 'All catalogs');
     }
+
+    public function getSedes(): JsonResponse
+    {
+        return ApiResponse::success(SedeModel::all(), 'Sedes loaded');
+    }
 }

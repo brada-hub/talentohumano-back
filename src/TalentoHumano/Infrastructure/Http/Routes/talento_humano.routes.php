@@ -8,6 +8,7 @@ use Src\TalentoHumano\Infrastructure\Http\Controllers\CvController;
 
 Route::prefix('v1/talento-humano')->group(function () {
     Route::get('/catalogs', [TalentoHumanoController::class, 'catalogs']);
+    Route::get('/sedes', [TalentoHumanoController::class, 'getSedes']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/empleados', [EmpleadoController::class, 'index']);

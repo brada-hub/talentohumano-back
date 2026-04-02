@@ -8,15 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Actualizar la tabla personas con el nuevo estado si no existe
-        if (!Schema::hasColumn('personas', 'estado_onboarding')) {
-            Schema::table('personas', function (Blueprint $table) {
-                $table->enum('estado_onboarding', ['sin_iniciar', 'en_progreso', 'completado', 'pendiente_contrato'])
-                      ->default('sin_iniciar')
-                      ->after('activo');
-            });
-        }
-
         // Crear tabla de tokens para onboarding
         Schema::create('onboarding_tokens', function (Blueprint $table) {
             $table->bigIncrements('id');

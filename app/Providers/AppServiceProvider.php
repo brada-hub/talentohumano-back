@@ -22,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'user' => \Src\Auth\Infrastructure\Persistence\Models\UserModel::class,
+        ]);
     }
 }

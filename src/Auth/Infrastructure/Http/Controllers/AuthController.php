@@ -20,6 +20,7 @@ final class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
+        \Illuminate\Support\Facades\Log::info('Intento de login recibido:', ['username' => $request->input('username')]);
         try {
             $command = new LoginCommand(
                 $request->input('username'),
@@ -51,20 +52,39 @@ final class AuthController extends Controller
     {
         $user = auth()->user();
         
-        // Load roles with permissions
-        $user->load(['roles.permissions']);
+        // Load roles with permissions AND sistema
+        $user->load(['roles.permissions', 'roles.sistema']);
         
-        // Build permissions array from all roles
-        $permissions = [];
+        $permissionsBySystem = [];
         foreach ($user->roles as $role) {
+            $sistema = $role->sistema;
+            $sistemaName = $sistema ? $sistema->sistema : 'Global';
+            $sistemaSlug = $sistema ? strtolower(str_replace(' ', '_', $sistema->sistema)) : 'global';
+            
+            if (!isset($permissionsBySystem[$sistemaSlug])) {
+                $permissionsBySystem[$sistemaSlug] = [
+                    'sistema' => $sistemaName,
+                    'url' => $sistema ? $sistema->url_sistema : null,
+                    'roles' => [],
+                    'permissions' => []
+                ];
+            }
+            
+            $permissionsBySystem[$sistemaSlug]['roles'][] = $role->nombres;
+            
             foreach ($role->permissions as $permission) {
-                $permissions[] = $permission->nombres;
+                $permissionsBySystem[$sistemaSlug]['permissions'][] = $permission->nombres;
             }
         }
-        $permissions = array_unique($permissions);
         
-        // Build response
-        $data = [
+        // Final sanitization of arrays
+        foreach ($permissionsBySystem as $slug => $data) {
+            $permissionsBySystem[$slug]['roles'] = array_values(array_unique($data['roles']));
+            $permissionsBySystem[$slug]['permissions'] = array_values(array_unique($data['permissions']));
+        }
+        
+        // Build basic user response mapping roles specifically for frontend compatibility
+        $userData = [
             'id_user' => $user->id_user,
             'id_persona' => $user->id_persona,
             'username' => $user->username,
@@ -73,9 +93,9 @@ final class AuthController extends Controller
                 'id_rol' => $r->id_rol,
                 'nombres' => $r->nombres,
             ]),
-            'permissions' => array_values($permissions),
+            'access_metadata' => $permissionsBySystem
         ];
         
-        return ApiResponse::success($data, 'Datos del usuario autenticado');
+        return ApiResponse::success($userData, 'Datos del usuario autenticado');
     }
 }
