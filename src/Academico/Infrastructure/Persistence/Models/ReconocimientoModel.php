@@ -2,10 +2,8 @@
 
 namespace Src\Academico\Infrastructure\Persistence\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Src\TalentoHumano\Infrastructure\Persistence\Models\ReconocimientoModel as TalentoHumanoReconocimientoModel;
 
-class ReconocimientoModel extends Model
+class ReconocimientoModel extends TalentoHumanoReconocimientoModel
 {
-    protected $table = 'reconocimientos';
-    protected $fillable = ['titulo_premio', 'institucion_otorgante', 'fecha', 'lugar', 'archivo_respaldo', 'id_persona'];
 }

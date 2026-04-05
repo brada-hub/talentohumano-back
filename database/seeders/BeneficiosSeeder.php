@@ -13,12 +13,14 @@ class BeneficiosSeeder extends Seeder
     public function run(): void
     {
         $parentescos = [
-            'Hijo(a)', 'Cónyuge', 'Padre', 'Madre', 'Hermano(a)', 'Nieto(a)', 'Abuelo(a)',
-            'Tío(a)', 'Sobrino(a)', 'Otro'
+            'Esposo(a)',
+            'Hijo(a)',
+            'Padre',
+            'Madre',
         ];
 
         foreach ($parentescos as $name) {
-            ParentescoModel::create(['nombre' => $name]);
+            ParentescoModel::firstOrCreate(['nombre' => $name]);
         }
     }
 }

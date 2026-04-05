@@ -2,10 +2,8 @@
 
 namespace Src\Academico\Infrastructure\Persistence\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Src\TalentoHumano\Infrastructure\Persistence\Models\ProduccionIntelectualModel as TalentoHumanoProduccionIntelectualModel;
 
-class ProduccionIntelectualModel extends Model
+class ProduccionIntelectualModel extends TalentoHumanoProduccionIntelectualModel
 {
-    protected $table = 'produccion_intelectual';
-    protected $fillable = ['tipo', 'titulo', 'fecha', 'editorial', 'id_ciudad', 'archivo_respaldo', 'id_persona'];
 }

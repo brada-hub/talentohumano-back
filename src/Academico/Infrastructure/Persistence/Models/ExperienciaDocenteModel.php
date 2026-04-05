@@ -2,10 +2,8 @@
 
 namespace Src\Academico\Infrastructure\Persistence\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Src\TalentoHumano\Infrastructure\Persistence\Models\ExperienciaDocenteModel as TalentoHumanoExperienciaDocenteModel;
 
-class ExperienciaDocenteModel extends Model
+class ExperienciaDocenteModel extends TalentoHumanoExperienciaDocenteModel
 {
-    protected $table = 'experiencia_docente';
-    protected $fillable = ['institucion', 'carrera', 'asignaturas', 'gestion_periodo', 'id_ciudad', 'archivo_respaldo', 'id_persona'];
 }

@@ -102,4 +102,9 @@ class PersonaModel extends Model
     public function idiomas() {
         return $this->hasMany(\Src\TalentoHumano\Infrastructure\Persistence\Models\IdiomaModel::class, 'id_persona');
     }
+
+    public function empleado()
+    {
+        return $this->hasOne(\Src\TalentoHumano\Infrastructure\Persistence\Models\EmpleadoModel::class, 'id_persona');
+    }
 }

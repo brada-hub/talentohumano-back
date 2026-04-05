@@ -24,4 +24,14 @@ class BeneficiarioModel extends Model
     protected $casts = [
         'fecha_nacimiento' => 'date',
     ];
+
+    public function parentesco()
+    {
+        return $this->belongsTo(ParentescoModel::class, 'id_parentesco');
+    }
+
+    public function expedido()
+    {
+        return $this->belongsTo(\Src\Geo\Infrastructure\Persistence\Models\DepartamentoModel::class, 'id_ci_expedido');
+    }
 }

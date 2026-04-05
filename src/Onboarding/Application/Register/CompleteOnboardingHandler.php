@@ -4,7 +4,6 @@ namespace Src\Onboarding\Application\Register;
 
 use Src\Onboarding\Domain\Repositories\OnboardingRepositoryInterface;
 use InvalidArgumentException;
-use Src\Shared\Infrastructure\Http\ApiResponse;
 
 final class CompleteOnboardingHandler
 {
@@ -14,23 +13,23 @@ final class CompleteOnboardingHandler
 
     public function handle(array $data, string $token): void
     {
-        // 1. Validar el portal (Seguridad: No permitir si está deshabilitado)
+        $forcedPersonaId = null;
+
         if (!$this->repo->isPortalEnabled()) {
-            throw new InvalidArgumentException("El portal de registro se encuentra deshabilitado temporalmente.");
+            throw new InvalidArgumentException('El portal de registro se encuentra deshabilitado temporalmente.');
         }
 
-        // 2. Validar Token (si existe)
         if ($token && !str_starts_with($token, 'new_session_')) {
             $otoken = $this->repo->findByToken($token);
             if (!$otoken || !$otoken->canBeUsed()) {
-                throw new InvalidArgumentException("Token de acceso inválido o expirado.");
+                throw new InvalidArgumentException('Token de acceso invalido o expirado.');
             }
+
+            $forcedPersonaId = $otoken->personaId();
         }
 
-        // 3. Ejecutar guardado persistente (Delegado al repo que maneja la transacción)
-        $this->repo->saveFullOnboardingData($data);
+        $this->repo->saveFullOnboardingData($data, $forcedPersonaId);
 
-        // 4. Desactivar token si fue usado
         if ($token && !str_starts_with($token, 'new_session_')) {
             $this->repo->deactivateToken($token);
         }

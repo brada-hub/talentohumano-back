@@ -20,7 +20,9 @@ use Src\TalentoHumano\Infrastructure\Persistence\Models\IdiomaModel;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\ReconocimientoModel;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\ProduccionIntelectualModel;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\EmpleadoModel;
+use Src\Beneficios\Infrastructure\Persistence\Models\BeneficiarioModel;
 use DateTimeImmutable;
+use InvalidArgumentException;
 
 final class EloquentOnboardingRepository implements OnboardingRepositoryInterface
 {
@@ -67,75 +69,83 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
 
     public function findPersonaByCiAndBirthDate(string $ci, string $birthDate): ?array
     {
-        // El CI en BD puede estar almacenado con complemento de expedición
-        // Ej: el usuario escribe "13260003" pero en BD es "13260003 CB"
-        // Buscamos por LIKE para ser flexible con el sufijo
-        $ciLimpio = trim($ci);
+        $fechaIn = Carbon::parse($birthDate)->format('Y-m-d');
+        $ciNormalizado = strtoupper(preg_replace('/[^A-Z0-9]/', '', trim($ci)));
 
-        $persona = PersonaModel::where(function ($q) use ($ciLimpio) {
-            $q->where('ci', $ciLimpio)                        // match exacto sin sufijo
-              ->orWhere('ci', 'LIKE', $ciLimpio . ' %')       // match con " CB", " LP", etc.
-              ->orWhereRaw('REPLACE(ci, \' \', \'\') LIKE ?', [strtoupper(str_replace(' ', '', $ciLimpio)) . '%']);
-        })->first();
+        $persona = PersonaModel::whereDate('fecha_nacimiento', $fechaIn)
+            ->get()
+            ->first(function (PersonaModel $persona) use ($ciNormalizado) {
+                $ciPersona = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) $persona->ci));
+                $complemento = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) ($persona->complemento ?? '')));
+
+                $candidatos = array_filter([
+                    $ciPersona,
+                    $complemento !== '' ? $ciPersona . $complemento : null,
+                    preg_replace('/[A-Z]{2}$/', '', $ciPersona),
+                ]);
+
+                return in_array($ciNormalizado, $candidatos, true);
+            });
 
         if (!$persona) return null;
-
-        $fechaDb = $persona->fecha_nacimiento
-            ? Carbon::parse($persona->fecha_nacimiento)->format('Y-m-d')
-            : null;
-        $fechaIn = Carbon::parse($birthDate)->format('Y-m-d');
-
-        if ($fechaDb && $fechaDb !== $fechaIn) return null;
 
         // CARGAR TODAS LAS RELACIONES PARA EL ONBOARDING
         $persona->load([
             'sexo', 'nacionalidad', 'ciudad', 'pais', 'expedido', 'documentos',
             'formacionPregrado', 'formacionPostgrado', 
             'experienciaDocente', 'experienciaProfesional',
-            'capacitaciones', 'idiomas', 'produccionIntelectual', 'reconocimientos'
+            'capacitaciones', 'idiomas', 'produccionIntelectual', 'reconocimientos',
+            'empleado.beneficiarios.parentesco', 'empleado.beneficiarios.expedido'
         ]);
 
-        return $persona->toArray();
+        $data = $persona->toArray();
+        $data['beneficiarios'] = $data['empleado']['beneficiarios'] ?? [];
+
+        return $data;
     }
 
     /**
-     * ATENCIÓN: Este método centraliza la transacción masiva de guardado
+     * ATENCIÃƒâ€œN: Este mÃƒÂ©todo centraliza la transacciÃƒÂ³n masiva de guardado
      */
-    public function saveFullOnboardingData(array $payload): void
+    public function saveFullOnboardingData(array $payload, ?string $forcedPersonaId = null): void
     {
         $dPersona     = $payload['persona'] ?? [];
+        $dBeneficiarios = $payload['beneficiarios'] ?? [];
         $dAcademico   = $payload['academico'] ?? [];
         $dExperiencia = $payload['experiencia'] ?? [];
         $dOtros       = $payload['otros'] ?? [];
         $dArchivos    = $payload['archivos'] ?? [];
 
-        DB::transaction(function () use ($dPersona, $dAcademico, $dExperiencia, $dOtros, $dArchivos) {
+        DB::transaction(function () use ($dPersona, $dBeneficiarios, $dAcademico, $dExperiencia, $dOtros, $dArchivos, $forcedPersonaId) {
             
             // 1. Guardar Persona y sus Documentos Base (Foto, CI)
-            $idPersona = $this->upsertPersona($dPersona, $dArchivos);
+            $idPersona = $this->upsertPersona($dPersona, $dArchivos, $forcedPersonaId);
 
             // 1.1 Guardar Datos de Empleado (Seguro Social, etc)
             $this->upsertEmpleado($idPersona, $dPersona);
 
-            // 2. Procesar Académico
+            // 1.2 Guardar Beneficiarios
+            $this->syncBeneficiarios($idPersona, $dBeneficiarios);
+
+            // 2. Procesar AcadÃƒÂ©mico
             $this->syncAcademico($idPersona, $dAcademico);
 
             // 3. Procesar Experiencia
             $this->syncExperiencia($idPersona, $dExperiencia);
 
-            // 4. Procesar Otros Méritos
+            // 4. Procesar Otros MÃƒÂ©ritos
             $this->syncOtrosMeritos($idPersona, $dOtros);
         });
     }
 
-    private function upsertPersona(array $data, array $archivos = []): string
+    private function upsertPersona(array $data, array $archivos = [], ?string $forcedPersonaId = null): string
     {
-        $persona = PersonaModel::where('ci', $data['ci'])->first() ?: new PersonaModel();
+        $persona = $this->findExistingPersonaForUpsert($data, $forcedPersonaId) ?: new PersonaModel();
         
-        // Traducciones de Ids (Blindando contra inputs no numéricos)
-        $idExpedido = $this->resolveId('departamentos', 'codigo_expedido', $data['id_ci_expedido'] ?? ($data['id_expedido'] ?? 1), 1);
-        $idNac      = $this->resolveId('nacionalidades', 'gentilicio', $data['id_nacionalidad'] ?? ($data['nacionalidad'] ?? 1), 1);
-        $idCiudad   = $this->resolveId('ciudades', 'nombre', $data['id_ciudad'] ?? 1, 1);
+        // Traducciones de Ids (Blindando contra inputs no numÃ©ricos)
+        $idExpedido = $this->resolveId('departamentos', 'codigo_expedido', $data['id_ci_expedido'] ?? ($data['id_expedido'] ?? null), $persona->id_ci_expedido ?? 1);
+        $idNac      = $this->resolveId('nacionalidades', 'gentilicio', $data['id_nacionalidad'] ?? ($data['nacionalidad'] ?? null), $persona->id_nacionalidad ?? 1);
+        $idCiudad   = $this->resolveId('ciudades', 'nombre', $data['id_ciudad'] ?? null, $persona->id_ciudad ?? null);
 
         $persona->fill([
             'primer_apellido'     => $data['primer_apellido'] ?? null,
@@ -173,6 +183,42 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         return (string)$persona->id;
     }
 
+    private function findExistingPersonaForUpsert(array $data, ?string $forcedPersonaId = null): ?PersonaModel
+    {
+        if ($forcedPersonaId) {
+            $persona = PersonaModel::find($forcedPersonaId);
+            if ($persona) {
+                return $persona;
+            }
+        }
+
+        if (!empty($data['id'])) {
+            $persona = PersonaModel::find((string) $data['id']);
+            if ($persona) {
+                return $persona;
+            }
+        }
+
+        if (empty($data['ci'])) {
+            return null;
+        }
+
+        $ciNormalizado = strtoupper(preg_replace('/[^A-Z0-9]/', '', trim((string) $data['ci'])));
+
+        return PersonaModel::all()->first(function (PersonaModel $persona) use ($ciNormalizado) {
+            $ciPersona = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) $persona->ci));
+            $complemento = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) ($persona->complemento ?? '')));
+
+            $candidatos = array_filter([
+                $ciPersona,
+                $complemento !== '' ? $ciPersona . $complemento : null,
+                preg_replace('/[A-Z]{2}$/', '', $ciPersona),
+            ]);
+
+            return in_array($ciNormalizado, $candidatos, true);
+        });
+    }
+
     private function upsertEmpleado(string $idPersona, array $data): void
     {
         // El onboarding suele recolectar datos de seguridad social y correos
@@ -197,10 +243,10 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
 
     private function resolveId(string $table, string $column, $value, $default)
     {
-        // Si ya es numérico, lo devolvemos tal cual
+        // Si ya es numÃƒÂ©rico, lo devolvemos tal cual
         if (is_numeric($value)) return (int)$value;
         
-        // Si viene como objeto/array desde el frontend (común en Quasar q-select)
+        // Si viene como objeto/array desde el frontend (comÃƒÂºn en Quasar q-select)
         if (is_array($value) || is_object($value)) {
             $value = (array)$value;
             // Intentar encontrar una llave que sea 'id_TABLA' o 'id'
@@ -225,8 +271,8 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                     'institucion'     => $a['institucion'] ?? '',
                     'carrera'         => $a['titulo'] ?? ($a['carrera'] ?? ''),
                     'id_depto'        => $a['id_depto'] ?? 1,
-                    'fecha_diploma'   => $a['fecha_diploma'] ?? null,
-                    'fecha_titulo'    => $a['fecha_titulo'] ?? null,
+                    'fecha_diploma'   => $a['fecha_diploma'] ?? ($a['fecha_emision_diploma'] ?? null),
+                    'fecha_titulo'    => $a['fecha_titulo'] ?? ($a['fecha_emision'] ?? null),
                     'archivo_diploma' => $this->saveBase64ToFile($a['archivo_diploma'] ?? null, $id, 'diploma'),
                     'archivo_titulo'  => $this->saveBase64ToFile($a['archivo_titulo'] ?? null, $id, 'titulo_prov'),
                 ]);
@@ -238,6 +284,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
                     'institucion'      => $a['institucion'] ?? '',
                     'id_depto'         => $a['id_depto'] ?? 1,
                     'fecha_diploma'    => $a['fecha_diploma'] ?? null,
+                    'fecha_certificacion' => $a['fecha_certificacion'] ?? ($a['fecha_emision'] ?? null),
                     'archivo_respaldo' => $this->saveBase64ToFile($a['archivo_respaldo'] ?? null, $id, 'respaldo_post'),
                 ]);
             }
@@ -320,6 +367,30 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         }
     }
 
+    private function syncBeneficiarios(string $idPersona, array $data): void
+    {
+        $empleado = EmpleadoModel::query()->where('id_persona', $idPersona)->first();
+        if (!$empleado) {
+            return;
+        }
+
+        BeneficiarioModel::query()->where('id_empleado', $empleado->id_empleado)->delete();
+
+        foreach (array_slice($data, 0, 2) as $beneficiario) {
+            BeneficiarioModel::query()->create([
+                'id_empleado' => $empleado->id_empleado,
+                'primer_apellido' => $beneficiario['primer_apellido'] ?? '',
+                'segundo_apellido' => $beneficiario['segundo_apellido'] ?? null,
+                'nombres' => $beneficiario['nombres'] ?? '',
+                'ci' => $beneficiario['ci'] ?? null,
+                'complemento' => $beneficiario['complemento'] ?? null,
+                'id_ci_expedido' => $beneficiario['id_ci_expedido'] ?? null,
+                'fecha_nacimiento' => $beneficiario['fecha_nacimiento'] ?? null,
+                'id_parentesco' => $beneficiario['id_parentesco'] ?? null,
+            ]);
+        }
+    }
+
     private function saveBase64ToFile($b64, string $idPersona, string $type, bool $isProfilePic = false, bool $isPersonaDoc = false): ?string
     {
         if (empty($b64) || !is_string($b64) || !str_starts_with($b64, 'data:')) return null;
@@ -332,7 +403,14 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         $ext = str_replace(['jpeg', 'pdf'], ['jpg', 'pdf'], $ext); // Normalizar
         if (str_contains($mime, 'pdf')) $ext = 'pdf'; 
 
-        $fileData = base64_decode($parts[1]);
+        $fileData = base64_decode($parts[1], true);
+        if ($fileData === false) {
+            throw new InvalidArgumentException('No se pudo procesar uno de los archivos adjuntos.');
+        }
+
+        if (strlen($fileData) > 1024 * 1024) {
+            throw new InvalidArgumentException('Los archivos adjuntos no deben superar 1 MB.');
+        }
 
         $fileName = "{$type}_{$idPersona}_".time().".". $ext;
         $filePath = "documentos/{$fileName}";
@@ -352,3 +430,6 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
         return $fullPath;
     }
 }
+
+
+

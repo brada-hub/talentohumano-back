@@ -17,6 +17,9 @@ require __DIR__ . '/../src/Beneficios/Infrastructure/Http/Routes/beneficios.rout
 // Onboarding Routes
 require __DIR__ . '/../src/Onboarding/Infrastructure/Http/Routes/onboarding.routes.php';
 
+// Academico Routes
+require __DIR__ . '/../src/Academico/Infrastructure/Http/Routes/academico.routes.php';
+
 // Personal Routes
 require __DIR__ . '/../src/Personal/Infrastructure/Http/Routes/personal.routes.php';
 

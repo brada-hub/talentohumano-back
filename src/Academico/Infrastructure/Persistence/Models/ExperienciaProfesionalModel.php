@@ -2,10 +2,8 @@
 
 namespace Src\Academico\Infrastructure\Persistence\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Src\TalentoHumano\Infrastructure\Persistence\Models\ExperienciaProfesionalModel as TalentoHumanoExperienciaProfesionalModel;
 
-class ExperienciaProfesionalModel extends Model
+class ExperienciaProfesionalModel extends TalentoHumanoExperienciaProfesionalModel
 {
-    protected $table = 'experiencia_profesional';
-    protected $fillable = ['cargo', 'empresa', 'fecha_inicio', 'fecha_fin', 'id_ciudad', 'archivo_respaldo', 'id_persona'];
 }

@@ -8,6 +8,14 @@ class AcademicoServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Bindings for Academic module
+        $this->app->bind(
+            \Src\Academico\Domain\Repositories\AcademicoRepositoryInterface::class,
+            \Src\Academico\Infrastructure\Persistence\EloquentAcademicoRepository::class
+        );
+    }
+
+    public function boot(): void
+    {
+        //
     }
 }

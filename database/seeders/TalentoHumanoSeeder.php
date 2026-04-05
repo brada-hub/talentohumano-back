@@ -47,31 +47,32 @@ class TalentoHumanoSeeder extends Seeder
             ['nombre' => 'Académico'],
             ['descripcion' => 'Planta Docente']
         );
-
-        // Sedes (Legacy IDs sync from screenshot)
+        
+        // 1. Sedes (IDs originales del servidor para que no se cruce la data)
         $sedesData = [
-            ['id_sede' => 1, 'nombre' => 'LA PAZ', 'sigla' => 'LPZ'],
-            ['id_sede' => 2, 'nombre' => 'EL ALTO', 'sigla' => 'EAL'],
-            ['id_sede' => 3, 'nombre' => 'COCHABAMBA', 'sigla' => 'COC'],
-            ['id_sede' => 4, 'nombre' => 'IVIRGARZAMA', 'sigla' => 'IVI'],
-            ['id_sede' => 5, 'nombre' => 'GUAYARAMERIN', 'sigla' => 'GYA'],
-            ['id_sede' => 6, 'nombre' => 'SANTA CRUZ', 'sigla' => 'SCZ'],
-            ['id_sede' => 7, 'nombre' => 'PUERTO QUIJARRO', 'sigla' => 'PQJ'],
-            ['id_sede' => 8, 'nombre' => 'COBIJA', 'sigla' => 'CBJ'],
-            ['id_sede' => 9, 'nombre' => 'NACIONAL', 'sigla' => 'NAC'],
+            ['id_sede' => 1, 'nombre' => 'LA PAZ', 'sigla' => 'LPZ', 'id_sede_padre' => null],
+            ['id_sede' => 2, 'nombre' => 'EL ALTO', 'sigla' => 'EAL', 'id_sede_padre' => 1],
+            ['id_sede' => 3, 'nombre' => 'COCHABAMBA', 'sigla' => 'COC', 'id_sede_padre' => null],
+            ['id_sede' => 4, 'nombre' => 'IVIRGARZAMA', 'sigla' => 'IVI', 'id_sede_padre' => 3],
+            ['id_sede' => 5, 'nombre' => 'GUAYARAMERIN', 'sigla' => 'GYA', 'id_sede_padre' => 8], // Guayará está en Beni/Pando region? ID 8 es Cobija
+            ['id_sede' => 6, 'nombre' => 'SANTA CRUZ', 'sigla' => 'SCZ', 'id_sede_padre' => null],
+            ['id_sede' => 7, 'nombre' => 'PUERTO QUIJARRO', 'sigla' => 'PQJ', 'id_sede_padre' => 6],
+            ['id_sede' => 8, 'nombre' => 'COBIJA', 'sigla' => 'CBJ', 'id_sede_padre' => null],
+            ['id_sede' => 9, 'nombre' => 'NACIONAL', 'sigla' => 'NAC', 'id_sede_padre' => null],
+            
+            // Nuevos Campus (IDs nuevos para no chocar con nada)
+            ['id_sede' => 10, 'nombre' => 'CAMPUS FLORIDA', 'sigla' => 'FLO', 'id_sede_padre' => 3],
+            ['id_sede' => 11, 'nombre' => 'CAMPUS JUAN PABLO', 'sigla' => 'JPA', 'id_sede_padre' => 3],
+            ['id_sede' => 12, 'nombre' => 'CAMPUS COLONIAL', 'sigla' => 'COL', 'id_sede_padre' => 3],
         ];
 
         foreach ($sedesData as $sede) {
-            SedeModel::updateOrCreate(
-                ['id_sede' => $sede['id_sede']],
-                [
-                    'nombre' => $sede['nombre'],
-                    'sigla'  => $sede['sigla'],
-                    'activo' => true,
-                    // Note: id_ciudad would normally be linked here, but since migration made it nullable, 
-                    // we skip it to avoid ID mismatch with existing geo data.
-                ]
-            );
+            SedeModel::updateOrCreate(['id_sede' => $sede['id_sede']], [
+                'nombre' => $sede['nombre'],
+                'sigla'  => $sede['sigla'],
+                'id_sede_padre' => $sede['id_sede_padre'],
+                'activo' => true
+            ]);
         }
 
         // Areas

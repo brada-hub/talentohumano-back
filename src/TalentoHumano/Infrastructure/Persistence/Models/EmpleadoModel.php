@@ -49,4 +49,9 @@ class EmpleadoModel extends Model
     {
         return $this->hasMany(\Src\TalentoHumano\Infrastructure\Persistence\Models\LegajoDocumentoModel::class, 'id_empleado');
     }
+
+    public function beneficiarios()
+    {
+        return $this->hasMany(\Src\Beneficios\Infrastructure\Persistence\Models\BeneficiarioModel::class, 'id_empleado');
+    }
 }

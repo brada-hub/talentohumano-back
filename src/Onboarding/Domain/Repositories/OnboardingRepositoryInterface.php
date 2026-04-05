@@ -12,6 +12,6 @@ interface OnboardingRepositoryInterface
     public function isPortalEnabled(): bool;
     
     // Core onboarding data persistence
-    public function saveFullOnboardingData(array $data): void;
+    public function saveFullOnboardingData(array $data, ?string $forcedPersonaId = null): void;
     public function findPersonaByCiAndBirthDate(string $ci, string $birthDate): ?array;
 }

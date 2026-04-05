@@ -2,13 +2,8 @@
 
 namespace Src\Academico\Infrastructure\Persistence\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Src\TalentoHumano\Infrastructure\Persistence\Models\FormacionPostgradoModel as TalentoHumanoFormacionPostgradoModel;
 
-class FormacionPostgradoModel extends Model
+class FormacionPostgradoModel extends TalentoHumanoFormacionPostgradoModel
 {
-    protected $table = 'formacion_postgrado';
-    protected $fillable = [
-        'tipo', 'nombre_programa', 'institucion', 'fecha_diploma', 
-        'fecha_certificacion', 'archivo_respaldo', 'id_ciudad', 'id_persona'
-    ];
 }

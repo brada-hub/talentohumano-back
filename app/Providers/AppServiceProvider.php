@@ -12,9 +12,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->register(\Src\Auth\Infrastructure\Providers\AuthServiceProvider::class);
+        $this->app->register(\Src\Academico\Infrastructure\Providers\AcademicoServiceProvider::class);
         $this->app->register(\Src\Personal\Infrastructure\Providers\PersonalServiceProvider::class);
         $this->app->register(\Src\Onboarding\Infrastructure\Providers\OnboardingServiceProvider::class);
         $this->app->register(\Src\TalentoHumano\Infrastructure\Providers\TalentoHumanoServiceProvider::class);
+        $this->app->register(\Src\Beneficios\Infrastructure\Providers\BeneficiosServiceProvider::class);
     }
 
     /**
