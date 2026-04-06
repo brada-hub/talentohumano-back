@@ -23,4 +23,5 @@ require __DIR__ . '/../src/Academico/Infrastructure/Http/Routes/academico.routes
 // Personal Routes
 require __DIR__ . '/../src/Personal/Infrastructure/Http/Routes/personal.routes.php';
 
-// Other modules will be added here
+// Recordatorios Routes
+require __DIR__ . '/../src/Recordatorios/Infrastructure/Http/Routes/recordatorios.routes.php';
