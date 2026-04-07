@@ -17,4 +17,6 @@ interface EmpleadoRepositoryInterface
     public function findPersonaCvDetails(string $personaId): ?array;
     public function getAttachments(array $personaDetails): array;
     public function updateEmployee(int $id, array $data): array;
+    public function findContratoPreviewData(int $empleadoId, ?int $contratoId = null): ?array;
+    public function persistGeneratedContract(int $empleadoId, int $contratoId, array $payload, string $pdfBinary, string $filename): array;
 }

@@ -4,10 +4,12 @@ namespace Src\TalentoHumano\Infrastructure\Persistence;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Src\Personal\Infrastructure\Persistence\Models\PersonaModel;
 use Src\TalentoHumano\Domain\Repositories\EmpleadoRepositoryInterface;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\EmpleadoModel;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\ContratoModel;
+use Src\TalentoHumano\Infrastructure\Persistence\Models\LegajoDocumentoModel;
 
 final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
 {
@@ -382,6 +384,105 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
             }
 
             return $this->findByIdWithDetails($idEmpleado);
+        });
+    }
+
+    public function findContratoPreviewData(int $empleadoId, ?int $contratoId = null): ?array
+    {
+        $empleado = EmpleadoModel::with([
+            'persona',
+            'persona.sexo',
+            'persona.nacionalidad',
+            'persona.departamento',
+            'persona.ciudad',
+            'persona.expedido',
+            'beneficiarios.parentesco',
+            'beneficiarios.expedido',
+            'contratoActivo.tipo',
+            'contratoActivo.area',
+            'contratoActivo.cargo',
+            'contratoActivo.sede',
+            'contratos.tipo',
+            'contratos.area',
+            'contratos.cargo',
+            'contratos.sede',
+        ])->find($empleadoId);
+
+        if (!$empleado) {
+            return null;
+        }
+
+        $contrato = $contratoId
+            ? $empleado->contratos->firstWhere('id_contrato', $contratoId)
+            : $empleado->contratoActivo;
+
+        if (!$contrato) {
+            return null;
+        }
+
+        return [
+            'empleado' => $empleado->toArray(),
+            'contrato' => $contrato->toArray(),
+        ];
+    }
+
+    public function persistGeneratedContract(int $empleadoId, int $contratoId, array $payload, string $pdfBinary, string $filename): array
+    {
+        return DB::transaction(function () use ($empleadoId, $contratoId, $payload, $pdfBinary, $filename) {
+            $empleado = EmpleadoModel::findOrFail($empleadoId);
+            $contrato = ContratoModel::where('id_empleado', $empleadoId)->findOrFail($contratoId);
+
+            ContratoModel::where('id_empleado', $empleadoId)
+                ->where('id_contrato', '!=', $contratoId)
+                ->where('estado_contrato', 'Activo')
+                ->update(['estado_contrato' => 'Vencido']);
+
+            $contrato->update([
+                'salario' => data_get($payload, 'contrato.salario_numeral') ?: $contrato->salario,
+                'fecha_inicio' => data_get($payload, 'contrato.fecha_inicio') ?: $contrato->fecha_inicio,
+                'fecha_fin' => data_get($payload, 'contrato.fecha_fin') ?: $contrato->fecha_fin,
+                'estado_contrato' => 'Activo',
+            ]);
+
+            $empleado->update([
+                'estado_laboral' => 'Activo',
+            ]);
+
+            $safeName = Str::slug(pathinfo($filename, PATHINFO_FILENAME));
+            $finalName = $safeName . '_' . now()->format('Ymd_His') . '.pdf';
+            $storagePath = "legajos/{$empleadoId}/contratos/{$finalName}";
+
+            Storage::disk('public')->put($storagePath, $pdfBinary);
+
+            $observaciones = "Contrato generado automáticamente para el contrato #{$contratoId}";
+
+            LegajoDocumentoModel::where('id_empleado', $empleadoId)
+                ->where('categoria', 'Contrato generado')
+                ->where('observaciones', $observaciones)
+                ->get()
+                ->each(function (LegajoDocumentoModel $documentoAnterior) {
+                    $oldPath = ltrim(str_replace('/storage/', '', (string) $documentoAnterior->ruta_archivo), '/');
+                    if ($oldPath !== '') {
+                        Storage::disk('public')->delete($oldPath);
+                    }
+                    $documentoAnterior->delete();
+                });
+
+            $documento = LegajoDocumentoModel::create([
+                'id_empleado' => $empleadoId,
+                'nombre_archivo' => $finalName,
+                'ruta_archivo' => Storage::url($storagePath),
+                'tipo_mime' => 'application/pdf',
+                'tamanio' => strlen($pdfBinary),
+                'categoria' => 'Contrato generado',
+                'estado' => 'Generado',
+                'observaciones' => $observaciones,
+            ]);
+
+            return [
+                'contrato' => $contrato->fresh()->toArray(),
+                'documento' => $documento->toArray(),
+            ];
         });
     }
 

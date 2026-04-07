@@ -5,6 +5,7 @@ use Src\TalentoHumano\Infrastructure\Http\Controllers\EmpleadoController;
 use Src\TalentoHumano\Infrastructure\Http\Controllers\TalentoHumanoController;
 use Src\TalentoHumano\Infrastructure\Http\Controllers\LegajoController;
 use Src\TalentoHumano\Infrastructure\Http\Controllers\CvController;
+use Src\TalentoHumano\Infrastructure\Http\Controllers\ContratoController;
 
 Route::prefix('v1/talento-humano')->group(function () {
     Route::get('/catalogs', [TalentoHumanoController::class, 'catalogs']);
@@ -26,6 +27,10 @@ Route::prefix('v1/talento-humano')->group(function () {
         // CV / Curriculum Vitae
         Route::get('/cv/{personaId}/descargar', [CvController::class, 'descargar']);
         Route::get('/cv/{personaId}/preview', [CvController::class, 'preview']);
+
+        // Contratos - plantilla y preview
+        Route::post('/empleados/{id}/contratos/plazo-fijo/preview', [ContratoController::class, 'previewPlazoFijo']);
+        Route::post('/empleados/{id}/contratos/plazo-fijo/descargar', [ContratoController::class, 'descargarPlazoFijo']);
     });
 });
 
@@ -33,4 +38,3 @@ Route::prefix('v1/talento-humano')->group(function () {
 Route::prefix('v1/cv')->group(function () {
     Route::get('/verificar/{personaId}', [CvController::class, 'verificar']);
 });
-
