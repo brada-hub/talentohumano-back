@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:9000', 'http://127.0.0.1:9000'],
+    'allowed_origins' => ['http://localhost:9000', 'http://127.0.0.1:9000', 'https://sigeth.xpertiaplus.com', 'https://sigva.xpertiaplus.com', 'https://postulacionesunitepc.xpertiaplus.com', 'http://localhost:8000', 'http://localhost:8001', 'http://localhost:8002'],
 
     'allowed_origins_patterns' => [],
 
