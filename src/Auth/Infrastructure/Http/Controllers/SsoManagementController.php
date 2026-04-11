@@ -116,19 +116,84 @@ final class SsoManagementController extends Controller
     // --- User-Role Assignments ---
     public function getUsers(Request $request): JsonResponse
     {
-        $users = UserModel::with(['roles.sistema'])->get();
+        $users = UserModel::with(['roles.sistema', 'permissions.sistema'])->get();
         return ApiResponse::success($users);
     }
 
-    public function assignRolesToUser(Request $request, $userId): JsonResponse
+    public function updateAccess(Request $request, $userId): JsonResponse
     {
         $user = UserModel::findOrFail($userId);
         $validated = $request->validate([
-            'role_ids'   => 'required|array',
+            'role_ids'         => 'array',
+            'role_ids.*'       => 'exists:roles,id_rol',
+            'permission_ids'   => 'array',
+            'permission_ids.*' => 'exists:permissions,id_permision',
+            'id_sede_scope'    => 'nullable|exists:sedes,id_sede',
+        ]);
+        
+        $user->roles()->sync($validated['role_ids'] ?? []);
+        $user->permissions()->sync($validated['permission_ids'] ?? []);
+        $user->id_sede_scope = $validated['id_sede_scope'] ?? null;
+        $user->save();
+        
+        return ApiResponse::success($user->load(['roles.sistema', 'permissions.sistema']), 'Accesos actualizados correctamente');
+    }
+
+    public function updateUserStatus($id): JsonResponse
+    {
+        $user = UserModel::findOrFail($id);
+        $user->activo = !$user->activo;
+        $user->save();
+        return ApiResponse::success($user, 'Estado de usuario actualizado');
+    }
+
+    public function resetUserPassword($id): JsonResponse
+    {
+        // We use the relationship defined in UserModel (assumed via id_persona)
+        $user = UserModel::findOrFail($id);
+        
+        // Find persona CI
+        $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::find($user->id_persona);
+        $newPassword = $persona ? $persona->ci : $user->username;
+        
+        $user->password = \Illuminate\Support\Facades\Hash::make($newPassword);
+        $user->debe_cambiar_password = true;
+        $user->save();
+        
+        return ApiResponse::success(null, 'Contraseña reiniciada correctamente (CI por defecto).');
+    }
+
+    public function getPersonasWithoutUser(): JsonResponse
+    {
+        $personaIdsInUsers = UserModel::whereNotNull('id_persona')->pluck('id_persona')->toArray();
+        $personas = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::whereNotIn('id', $personaIdsInUsers)
+            ->select('id', 'nombres', 'primer_apellido', 'segundo_apellido', 'ci')
+            ->get();
+        return ApiResponse::success($personas);
+    }
+
+    public function storeUser(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'username'   => 'required|unique:users,username',
+            'password'   => 'required|min:4',
+            'id_persona' => 'required|exists:personas,id',
+            'role_ids'   => 'array',
             'role_ids.*' => 'exists:roles,id_rol',
         ]);
         
-        $user->roles()->sync($validated['role_ids']);
-        return ApiResponse::success($user->load('roles.sistema'), 'Roles asignados correctamente');
+        $user = UserModel::create([
+            'username'   => $validated['username'],
+            'password'   => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'id_persona' => $validated['id_persona'],
+            'activo'     => true,
+            'debe_cambiar_password' => true,
+        ]);
+        
+        if (!empty($validated['role_ids'])) {
+            $user->roles()->sync($validated['role_ids']);
+        }
+        
+        return ApiResponse::success($user->load('roles.sistema'), 'Usuario creado correctamente');
     }
 }

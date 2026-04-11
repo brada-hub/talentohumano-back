@@ -21,6 +21,7 @@ class PersonaModel extends Model
         'nombres',
         'ci',
         'complemento',
+        'tratamiento',
         'id_ci_expedido',
         'id_sexo',
         'fecha_nacimiento',

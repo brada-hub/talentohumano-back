@@ -52,8 +52,8 @@ final class AuthController extends Controller
     {
         $user = auth()->user();
         
-        // Load roles with permissions AND sistema
-        $user->load(['roles.permissions', 'roles.sistema']);
+        // Load roles with permissions AND sistema, direct permissions and persona with sede
+        $user->load(['sede', 'persona.sexo', 'roles.permissions', 'roles.sistema', 'permissions.sistema']);
         
         $permissionsBySystem = [];
         foreach ($user->roles as $role) {
@@ -82,20 +82,81 @@ final class AuthController extends Controller
             $permissionsBySystem[$slug]['roles'] = array_values(array_unique($data['roles']));
             $permissionsBySystem[$slug]['permissions'] = array_values(array_unique($data['permissions']));
         }
+
+        $flatPermissions = [];
+        foreach ($permissionsBySystem as $data) {
+            $flatPermissions = array_merge($flatPermissions, $data['permissions']);
+        }
+
+        foreach ($user->permissions as $permission) {
+            $flatPermissions[] = $permission->nombres;
+        }
+
+        $flatPermissions = array_values(array_unique($flatPermissions));
         
         // Build basic user response mapping roles specifically for frontend compatibility
+        $persona = $user->persona;
+        if ($persona && $persona->foto) {
+            $persona->foto_url = asset($persona->foto); // Assuming path is already full or needs storage/
+        }
+
         $userData = [
             'id_user' => $user->id_user,
             'id_persona' => $user->id_persona,
             'username' => $user->username,
             'activo' => $user->activo,
+            'debe_cambiar_password' => (bool)$user->debe_cambiar_password,
+            'id_sede_scope' => $user->id_sede_scope,
+            'sede' => $user->sede,
+            'persona' => $persona,
             'roles' => $user->roles->map(fn($r) => [
                 'id_rol' => $r->id_rol,
                 'nombres' => $r->nombres,
             ]),
+            'permissions' => $flatPermissions,
             'access_metadata' => $permissionsBySystem
         ];
         
         return ApiResponse::success($userData, 'Datos del usuario autenticado');
+    }
+
+    public function changePassword(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password'     => 'required|min:4|confirmed',
+        ]);
+
+        $user = auth()->user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+            return ApiResponse::error('La contraseña actual es incorrecta', 422);
+        }
+
+        $user->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+            'debe_cambiar_password' => false,
+        ]);
+
+        return ApiResponse::success([], 'Contraseña actualizada correctamente');
+    }
+
+    public function updateProfile(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user->id_persona) {
+            return ApiResponse::error('No tienes una persona asociada', 422);
+        }
+
+        $validated = $request->validate([
+            'celular_personal'    => 'nullable|string',
+            'correo_personal'     => 'nullable|email',
+            'direccion_domicilio' => 'nullable|string',
+        ]);
+
+        $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::findOrFail($user->id_persona);
+        $persona->update($validated);
+
+        return ApiResponse::success($persona, 'Información actualizada correctamente');
     }
 }

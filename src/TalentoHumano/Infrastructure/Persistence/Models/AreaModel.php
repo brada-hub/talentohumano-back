@@ -13,6 +13,11 @@ class AreaModel extends Model
         'nombre_area',
         'id_area_padre',
         'tipo_area',
+        'activo',
+    ];
+
+    protected $casts = [
+        'activo' => 'boolean',
     ];
 
     public function parent()
@@ -23,5 +28,10 @@ class AreaModel extends Model
     public function children()
     {
         return $this->hasMany(AreaModel::class, 'id_area_padre', 'id_area');
+    }
+
+    public function puestos()
+    {
+        return $this->hasMany(PuestoModel::class, 'id_area', 'id_area');
     }
 }

@@ -25,3 +25,6 @@ require __DIR__ . '/../src/Personal/Infrastructure/Http/Routes/personal.routes.p
 
 // Recordatorios Routes
 require __DIR__ . '/../src/Recordatorios/Infrastructure/Http/Routes/recordatorios.routes.php';
+
+// Reportes Routes
+require __DIR__ . '/../src/Reportes/Infrastructure/Http/Routes/reportes.routes.php';

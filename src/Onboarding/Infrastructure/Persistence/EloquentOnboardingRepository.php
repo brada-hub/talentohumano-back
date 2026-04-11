@@ -153,6 +153,7 @@ final class EloquentOnboardingRepository implements OnboardingRepositoryInterfac
             'nombres'             => $data['nombres'] ?? null,
             'ci'                  => $data['ci'],
             'complemento'         => $data['complemento'] ?? null,
+            'tratamiento'         => $data['tratamiento'] ?? null,
             'id_ci_expedido'      => $idExpedido,
             'id_sexo'             => $data['id_sexo'] ?? 1,
             'fecha_nacimiento'    => $data['fecha_nacimiento'] ?? null,

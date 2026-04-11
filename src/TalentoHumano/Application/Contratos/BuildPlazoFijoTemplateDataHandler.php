@@ -43,8 +43,15 @@ final class BuildPlazoFijoTemplateDataHandler
                 'razon_social' => 'ASOCIACIÓN CIVIL UNIVERSIDAD TÉCNICA PRIVADA COSMOS – UNITEPC',
                 'domicilio_legal' => 'la Av. Blanco Galindo Km 7 ½, Zona Florida Norte de la ciudad de Cochabamba',
                 'representante_legal' => 'Lic. Eduardo E. Mancilla Heredia',
-                'apoderado_actual' => 'Lic. Brayan Cabeño Zambrana',
-                'apoderado_ci' => '8004816 Cbba.',
+                'apoderado_actual' => 'Dra. Isabella Vargas Guzmán',
+                'apoderado_tratamiento' => 'la',
+                'apoderado_ci' => '10825189',
+                'apoderado_expedido' => 'el Beni',
+                'apoderado_poder_nro' => '299/2.024',
+                'apoderado_poder_fecha' => '11 Junio del 2024',
+                'apoderado_notaria_nro' => '14',
+                'apoderado_notaria_distrito' => 'Cochabamba',
+                'apoderado_notaria_cargo' => 'Jorge A. Loayza Molina',
             ],
             'trabajador' => [
                 'nombre_completo' => $this->buildFullNameNamesFirst($persona),
@@ -55,12 +62,14 @@ final class BuildPlazoFijoTemplateDataHandler
                 'estado_civil' => mb_strtolower((string) ($persona['estado_civil'] ?? '')),
                 'nacionalidad' => $this->buildNationalityLabel($persona, $sexo),
                 'domicilio' => $persona['direccion_domicilio'] ?? null,
+                'departamento_domicilio' => $persona['departamento_domicilio'] ?? null,
                 'sexo' => $sexo,
             ],
             'contrato' => [
                 'id_contrato' => $contrato['id_contrato'] ?? null,
                 'cargo' => $contrato['cargo']['nombre_cargo'] ?? null,
                 'dependencia' => $contrato['area']['nombre_area'] ?? null,
+                'gestion_academica' => data_get($overrides, 'contrato.gestion_academica') ?? '2026',
                 'duracion_literal' => $this->buildDuracionLiteral($fechaInicio, $fechaFin),
                 'fecha_inicio' => $fechaInicio?->format('Y-m-d'),
                 'fecha_fin' => $fechaFin?->format('Y-m-d'),
@@ -70,14 +79,17 @@ final class BuildPlazoFijoTemplateDataHandler
                 'carga_horaria_numeral' => $cargaHorariaNumeral,
                 'carga_horaria_literal' => $this->formatHoursLiteral($cargaHorariaNumeral),
                 'horarios' => data_get($overrides, 'contrato.horarios') ?? [
-                    'De lunes a viernes de 07:45 a 12:30 y de 14:30 a 18:30',
-                    'Sábados de 08:15 a 12:30.',
+                    'De lunes a viernes de 08:00 a 12:00 y de 14:30 a 18:30',
+                    'Sábados de 08:30 a 12:30.',
                 ],
                 'nota_horaria' => data_get($overrides, 'contrato.nota_horaria') ?? 'Toda vez que existen cuatro (4) horas adicionales, estas serán utilizadas durante cada semana previo acuerdo de partes y bajo supervisión e instrucción de su inmediato superior.',
                 'salario_numeral' => $salarioNumeral,
                 'salario_numeral_formateado' => $this->formatSalaryNumeral($salarioNumeral),
                 'salario_literal_parentesis' => $this->formatSalaryLiteral($salarioNumeral),
-                'remuneracion_texto' => data_get($overrides, 'contrato.remuneracion_texto') ?: 'La referida suma de dinero será pagada en la moneda señalada y establecido por ley, mediante depósito bancario, en una cuenta bancaria y ' . $gramatica['titular_cuenta'] . '.',
+                'remuneracion_detalle' => data_get($overrides, 'contrato.remuneracion_detalle') ?: 'Que será cancelado mes cumplido conforme el Art. 52 y 53 de la Ley General del Trabajo y D.S. 28699 Art. 6to.',
+                'bono_frontera_texto' => data_get($overrides, 'contrato.bono_frontera_texto') ?? null,
+                'total_ganado_texto' => data_get($overrides, 'contrato.total_ganado_texto') ?? null,
+                'referida_suma_texto' => data_get($overrides, 'contrato.referida_suma_texto') ?: 'La referida suma de dinero será pagada en la moneda señalada y hasta el día quince (15) de cada mes vencido, mediante depósito bancario, en una cuenta bancaria y ' . $gramatica['titular_cuenta'] . '.',
                 'ciudad_firma' => data_get($overrides, 'contrato.ciudad_firma') ?? $contrato['sede']['nombre'] ?? 'Cochabamba',
                 'fecha_firma' => $fechaFirma?->format('Y-m-d'),
                 'fecha_firma_literal' => $this->formatDateLiteral($fechaFirma),
@@ -198,18 +210,19 @@ final class BuildPlazoFijoTemplateDataHandler
     private function buildHerederos(array $beneficiarios): array
     {
         return collect($beneficiarios)
-            ->take(2)
             ->map(function (array $beneficiario) {
+                $fechaNac = $this->toCarbon($beneficiario['fecha_nacimiento'] ?? null);
+
                 return [
-                    'parentesco' => $beneficiario['parentesco']['nombre_parentesco'] ?? 'Beneficiario',
+                    'parentesco' => $beneficiario['parentesco']['nombre'] ?? $beneficiario['parentesco']['nombre_parentesco'] ?? 'Beneficiario',
                     'nombre' => trim(collect([
                         $beneficiario['nombres'] ?? null,
                         $beneficiario['primer_apellido'] ?? $beneficiario['apellido_paterno'] ?? null,
                         $beneficiario['segundo_apellido'] ?? $beneficiario['apellido_materno'] ?? null,
                     ])->filter()->implode(' ')),
-                    'edad' => $this->toCarbon($beneficiario['fecha_nacimiento'] ?? null)?->age,
+                    'edad' => $fechaNac ? $fechaNac->age : null,
                     'ci' => trim(($beneficiario['ci'] ?? '') . ' ' . ($beneficiario['complemento'] ?? '')),
-                    'expedido' => $beneficiario['expedido']['sigla'] ?? $beneficiario['expedido']['nombre'] ?? null,
+                    'expedido' => $beneficiario['expedido']['codigo_expedido'] ?? $beneficiario['expedido']['nombre'] ?? null,
                 ];
             })
             ->values()

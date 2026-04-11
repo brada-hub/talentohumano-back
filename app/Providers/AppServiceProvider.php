@@ -18,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->register(\Src\TalentoHumano\Infrastructure\Providers\TalentoHumanoServiceProvider::class);
         $this->app->register(\Src\Beneficios\Infrastructure\Providers\BeneficiosServiceProvider::class);
         $this->app->register(\Src\Recordatorios\Infrastructure\Providers\RecordatoriosServiceProvider::class);
+        $this->app->register(\Src\Reportes\Infrastructure\Providers\ReportesServiceProvider::class);
     }
 
     /**

@@ -11,26 +11,20 @@ class SedeModel extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'id_sede', // Allows explicit ID assignment in seeders
+        'id_sede', 
         'nombre',
         'sigla',
+        'id_departamento',
         'activo',
-        'id_ciudad',
-        'id_sede_padre',
     ];
 
-    public function ciudad()
+    public function departamento()
     {
-        return $this->belongsTo(\Src\Geo\Infrastructure\Persistence\Models\CiudadModel::class, 'id_ciudad');
+        return $this->belongsTo(\Src\Geo\Infrastructure\Persistence\Models\DepartamentoModel::class, 'id_departamento');
     }
 
-    public function padre()
+    public function campus()
     {
-        return $this->belongsTo(SedeModel::class, 'id_sede_padre');
-    }
-
-    public function hijos()
-    {
-        return $this->hasMany(SedeModel::class, 'id_sede_padre');
+        return $this->hasMany(CampusModel::class, 'id_sede');
     }
 }

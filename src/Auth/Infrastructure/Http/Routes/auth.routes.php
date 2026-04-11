@@ -9,6 +9,8 @@ Route::prefix('v1/auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/update-profile', [AuthController::class, 'updateProfile']);
 
         // SSO Management
         Route::prefix('sso')->group(function () {
@@ -27,9 +29,13 @@ Route::prefix('v1/auth')->group(function () {
             Route::get('/permissions', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'getPermissions']);
             Route::post('/permissions', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'storePermission']);
 
-            // User-Role Assignments
+            // Usuarios y Roles
             Route::get('/users', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'getUsers']);
-            Route::post('/users/{id}/roles', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'assignRolesToUser']);
+            Route::post('/users', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'storeUser']);
+            Route::post('/users/{id}/access', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'updateAccess']);
+            Route::post('/users/{id}/toggle-status', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'updateUserStatus']);
+            Route::post('/users/{id}/reset-password', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'resetUserPassword']);
+            Route::get('/personas-sin-usuario', [\Src\Auth\Infrastructure\Http\Controllers\SsoManagementController::class, 'getPersonasWithoutUser']);
         });
     });
 });

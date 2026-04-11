@@ -16,7 +16,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
 {
     public function getResumen(array $filters = []): array
     {
-        $today = Carbon::today();
+        $today = $this->localToday();
         $selectedMonth = $this->resolveMonth($filters);
         $empleados = $this->loadEmpleados($filters);
 
@@ -36,7 +36,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
 
     public function sendCumpleanios(int $empleadoId, bool $automatico = false, bool $force = false): array
     {
-        $today = Carbon::today();
+        $today = $this->localToday();
         $empleado = EmpleadoModel::with([
             'persona',
             'contratoActivo.area',
@@ -51,7 +51,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
             ];
         }
 
-        $birthDate = Carbon::parse($empleado->persona->fecha_nacimiento);
+        $birthDate = $this->localDate($empleado->persona->fecha_nacimiento);
         $eventDate = $birthDate->copy()->year($today->year);
 
         $existing = RecordatorioEnviadoModel::query()
@@ -147,7 +147,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
 
     public function sendCumpleaniosDelDia(): array
     {
-        $today = Carbon::today();
+        $today = $this->localToday();
 
         $empleados = EmpleadoModel::with([
             'persona',
@@ -172,12 +172,14 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
         $withBirthdays = $empleados
             ->filter(fn ($empleado) => !empty($empleado->persona?->fecha_nacimiento))
             ->map(function ($empleado) use ($today) {
-                $birthDate = Carbon::parse($empleado->persona->fecha_nacimiento);
-                $nextBirthday = $birthDate->copy()->year($today->year);
+                $birthDate = $this->localDate($empleado->persona->fecha_nacimiento);
+                $nextBirthday = $birthDate->copy()->year($today->year)->startOfDay();
 
                 if ($nextBirthday->lt($today)) {
                     $nextBirthday->addYear();
                 }
+
+                $daysRemaining = (int) $today->diffInDays($nextBirthday, false);
 
                 return [
                     'id_empleado' => $empleado->id_empleado,
@@ -191,7 +193,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
                     'fecha_evento' => $nextBirthday->format('Y-m-d'),
                     'fecha_evento_legible' => $nextBirthday->format('d/m'),
                     'edad_que_cumple' => $nextBirthday->year - $birthDate->year,
-                    'dias_restantes' => $today->diffInDays($nextBirthday, false),
+                    'dias_restantes' => $daysRemaining,
                     'cargo' => $empleado->contratoActivo?->cargo?->nombre_cargo,
                     'area' => $empleado->contratoActivo?->area?->nombre_area,
                     'sede' => $empleado->contratoActivo?->sede?->nombre,
@@ -217,12 +219,14 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
         $withAnniversaries = $empleados
             ->filter(fn ($empleado) => !empty($empleado->contratoActivo?->fecha_inicio))
             ->map(function ($empleado) use ($today) {
-                $startDate = Carbon::parse($empleado->contratoActivo->fecha_inicio);
-                $nextAnniversary = $startDate->copy()->year($today->year);
+                $startDate = $this->localDate($empleado->contratoActivo->fecha_inicio);
+                $nextAnniversary = $startDate->copy()->year($today->year)->startOfDay();
 
                 if ($nextAnniversary->lt($today)) {
                     $nextAnniversary->addYear();
                 }
+
+                $daysRemaining = (int) $today->diffInDays($nextAnniversary, false);
 
                 return [
                     'id_empleado' => $empleado->id_empleado,
@@ -235,7 +239,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
                     'fecha_evento' => $nextAnniversary->format('Y-m-d'),
                     'fecha_evento_legible' => $nextAnniversary->format('d/m'),
                     'anios_que_cumple' => $nextAnniversary->year - $startDate->year,
-                    'dias_restantes' => $today->diffInDays($nextAnniversary, false),
+                    'dias_restantes' => $daysRemaining,
                     'cargo' => $empleado->contratoActivo?->cargo?->nombre_cargo,
                     'area' => $empleado->contratoActivo?->area?->nombre_area,
                     'sede' => $empleado->contratoActivo?->sede?->nombre,
@@ -260,7 +264,8 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
         $contracts = $empleados
             ->filter(fn ($empleado) => !empty($empleado->contratoActivo?->fecha_fin))
             ->map(function ($empleado) use ($today) {
-                $fechaFin = Carbon::parse($empleado->contratoActivo->fecha_fin);
+                $fechaFin = $this->localDate($empleado->contratoActivo->fecha_fin);
+                $daysRemaining = (int) $today->diffInDays($fechaFin, false);
 
                 return [
                     'id_empleado' => $empleado->id_empleado,
@@ -272,7 +277,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
                     ])->filter()->implode(' ')),
                     'fecha_fin' => $fechaFin->format('Y-m-d'),
                     'fecha_fin_legible' => $fechaFin->format('d/m/Y'),
-                    'dias_restantes' => $today->diffInDays($fechaFin, false),
+                    'dias_restantes' => $daysRemaining,
                     'cargo' => $empleado->contratoActivo?->cargo?->nombre_cargo,
                     'area' => $empleado->contratoActivo?->area?->nombre_area,
                     'sede' => $empleado->contratoActivo?->sede?->nombre,
@@ -330,7 +335,7 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
 
     private function buildBirthdayPayload(EmpleadoModel $empleado, Carbon $eventDate): array
     {
-        $birthDate = Carbon::parse($empleado->persona->fecha_nacimiento);
+        $birthDate = $this->localDate($empleado->persona->fecha_nacimiento);
 
         return [
             'nombre_completo' => trim(collect([
@@ -412,9 +417,23 @@ final class EloquentRecordatorioRepository implements RecordatorioRepositoryInte
 
     private function resolveMonth(array $filters): int
     {
-        $month = isset($filters['mes']) && $filters['mes'] !== '' ? (int) $filters['mes'] : (int) Carbon::today()->month;
+        $month = isset($filters['mes']) && $filters['mes'] !== '' ? (int) $filters['mes'] : (int) $this->localToday()->month;
 
-        return $month >= 1 && $month <= 12 ? $month : (int) Carbon::today()->month;
+        return $month >= 1 && $month <= 12 ? $month : (int) $this->localToday()->month;
+    }
+
+    private function localToday(): Carbon
+    {
+        return Carbon::now('America/La_Paz')->startOfDay();
+    }
+
+    private function localDate(mixed $value): Carbon
+    {
+        if ($value instanceof Carbon) {
+            return Carbon::createFromFormat('Y-m-d', $value->format('Y-m-d'), 'America/La_Paz')->startOfDay();
+        }
+
+        return Carbon::createFromFormat('Y-m-d', (string) $value, 'America/La_Paz')->startOfDay();
     }
 
     private function resolveEmpleadoIdsForFilters(array $filters): ?array

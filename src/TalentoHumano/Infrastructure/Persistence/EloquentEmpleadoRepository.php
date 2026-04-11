@@ -5,6 +5,7 @@ namespace Src\TalentoHumano\Infrastructure\Persistence;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 use Src\Personal\Infrastructure\Persistence\Models\PersonaModel;
 use Src\TalentoHumano\Domain\Repositories\EmpleadoRepositoryInterface;
 use Src\TalentoHumano\Infrastructure\Persistence\Models\EmpleadoModel;
@@ -486,6 +487,181 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
         });
     }
 
+    public function createContrato(int $empleadoId, array $data): array
+    {
+        return DB::transaction(function () use ($empleadoId, $data) {
+            $empleado = EmpleadoModel::with('contratos')->findOrFail($empleadoId);
+
+            $estado = $this->normalizeContratoState(
+                $data['estado_contrato'] ?? 'Activo',
+                $data['fecha_inicio'] ?? null,
+                $data['fecha_fin'] ?? null,
+            );
+
+            if ($estado === 'Activo') {
+                ContratoModel::where('id_empleado', $empleadoId)
+                    ->where('estado_contrato', 'Activo')
+                    ->update(['estado_contrato' => 'Vencido']);
+
+                $empleado->update(['estado_laboral' => 'Activo']);
+            }
+
+            $contrato = ContratoModel::create([
+                'id_empleado' => $empleadoId,
+                'id_tipo_contrato' => $data['id_tipo_contrato'],
+                'id_area' => $data['id_area'],
+                'id_cargo' => $data['id_cargo'],
+                'salario' => $data['salario'] ?? null,
+                'fecha_inicio' => $data['fecha_inicio'],
+                'fecha_fin' => $data['fecha_fin'] ?? null,
+                'id_sede' => $data['id_sede'],
+                'estado_contrato' => $estado,
+            ]);
+
+            return $contrato->load(['tipo', 'area', 'cargo', 'sede'])->toArray();
+        });
+    }
+
+    public function updateContrato(int $empleadoId, int $contratoId, array $data): array
+    {
+        return DB::transaction(function () use ($empleadoId, $contratoId, $data) {
+            $empleado = EmpleadoModel::findOrFail($empleadoId);
+            $contrato = ContratoModel::where('id_empleado', $empleadoId)->findOrFail($contratoId);
+
+            $estado = $this->normalizeContratoState(
+                $data['estado_contrato'] ?? $contrato->estado_contrato,
+                $data['fecha_inicio'] ?? $contrato->fecha_inicio?->toDateString(),
+                $data['fecha_fin'] ?? $contrato->fecha_fin?->toDateString(),
+            );
+
+            if ($estado === 'Activo') {
+                ContratoModel::where('id_empleado', $empleadoId)
+                    ->where('id_contrato', '!=', $contratoId)
+                    ->where('estado_contrato', 'Activo')
+                    ->update(['estado_contrato' => 'Vencido']);
+
+                $empleado->update(['estado_laboral' => 'Activo']);
+            }
+
+            $contrato->update([
+                'id_tipo_contrato' => $data['id_tipo_contrato'],
+                'id_area' => $data['id_area'],
+                'id_cargo' => $data['id_cargo'],
+                'salario' => $data['salario'] ?? null,
+                'fecha_inicio' => $data['fecha_inicio'],
+                'fecha_fin' => $data['fecha_fin'] ?? null,
+                'id_sede' => $data['id_sede'],
+                'estado_contrato' => $estado,
+            ]);
+
+            if ($estado !== 'Activo' && !$this->hasActiveContrato($empleadoId)) {
+                $empleado->update(['estado_laboral' => 'Inactivo']);
+            }
+
+            return $contrato->load(['tipo', 'area', 'cargo', 'sede'])->toArray();
+        });
+    }
+
+    public function finalizeContrato(int $empleadoId, int $contratoId, ?string $fechaFin = null): array
+    {
+        return DB::transaction(function () use ($empleadoId, $contratoId, $fechaFin) {
+            $empleado = EmpleadoModel::findOrFail($empleadoId);
+            $contrato = ContratoModel::where('id_empleado', $empleadoId)->findOrFail($contratoId);
+
+            $contrato->update([
+                'fecha_fin' => $fechaFin ?: now()->toDateString(),
+                'estado_contrato' => 'Finalizado',
+            ]);
+
+            if (!$this->hasActiveContrato($empleadoId)) {
+                $empleado->update(['estado_laboral' => 'Inactivo']);
+            }
+
+            return $contrato->load(['tipo', 'area', 'cargo', 'sede'])->toArray();
+        });
+    }
+
+    public function getContratoVersiones(int $empleadoId, int $contratoId): array
+    {
+        ContratoModel::where('id_empleado', $empleadoId)->findOrFail($contratoId);
+
+        $prefix = "Contrato firmado #{$contratoId} v";
+
+        return LegajoDocumentoModel::where('id_empleado', $empleadoId)
+            ->where('categoria', 'Contrato firmado')
+            ->where('observaciones', 'like', $prefix . '%')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (LegajoDocumentoModel $documento) {
+                $version = 1;
+                if (preg_match('/v(\d+)/', (string) $documento->observaciones, $matches) === 1) {
+                    $version = (int) $matches[1];
+                }
+
+                return array_merge($documento->toArray(), [
+                    'version' => $version,
+                ]);
+            })
+            ->all();
+    }
+
+    public function uploadContratoFirmado(int $empleadoId, int $contratoId, array $fileData): array
+    {
+        return DB::transaction(function () use ($empleadoId, $contratoId, $fileData) {
+            ContratoModel::where('id_empleado', $empleadoId)->findOrFail($contratoId);
+
+            /** @var UploadedFile $file */
+            $file = $fileData['file'];
+            $extension = strtolower($file->getClientOriginalExtension());
+            $baseName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+
+            $currentVersion = LegajoDocumentoModel::where('id_empleado', $empleadoId)
+                ->where('categoria', 'Contrato firmado')
+                ->where('observaciones', 'like', "Contrato firmado #{$contratoId} v%")
+                ->count();
+
+            $nextVersion = $currentVersion + 1;
+            $finalName = "{$baseName}_v{$nextVersion}_" . now()->format('Ymd_His') . ".{$extension}";
+            $storagePath = $file->storeAs("public/legajos/{$empleadoId}/contratos/firmados", $finalName);
+
+            $documento = LegajoDocumentoModel::create([
+                'id_empleado' => $empleadoId,
+                'nombre_archivo' => $file->getClientOriginalName(),
+                'ruta_archivo' => Storage::url($storagePath),
+                'tipo_mime' => $file->getMimeType(),
+                'tamanio' => $file->getSize(),
+                'categoria' => 'Contrato firmado',
+                'estado' => 'Vigente',
+                'observaciones' => "Contrato firmado #{$contratoId} v{$nextVersion}",
+            ]);
+
+            return array_merge($documento->toArray(), [
+                'version' => $nextVersion,
+            ]);
+        });
+    }
+
+    private function normalizeContratoState(?string $estado, ?string $fechaInicio, ?string $fechaFin): string
+    {
+        $estado = $estado ?: 'Borrador';
+
+        if (in_array($estado, ['Borrador', 'Finalizado'], true)) {
+            return $estado;
+        }
+
+        if ($fechaFin) {
+            try {
+                if (\Carbon\Carbon::parse($fechaFin)->lt(now()->startOfDay())) {
+                    return 'Vencido';
+                }
+            } catch (\Throwable $exception) {
+                return $estado;
+            }
+        }
+
+        return $estado;
+    }
+
     private function saveBase64Foto(string $b64, string $idPersona): string
     {
         $parts = explode(',', $b64);
@@ -497,5 +673,12 @@ final class EloquentEmpleadoRepository implements EmpleadoRepositoryInterface
 
         Storage::disk('public')->put($filePath, $fileData);
         return "/storage/{$filePath}";
+    }
+
+    private function hasActiveContrato(int $empleadoId): bool
+    {
+        return ContratoModel::where('id_empleado', $empleadoId)
+            ->where('estado_contrato', 'Activo')
+            ->exists();
     }
 }

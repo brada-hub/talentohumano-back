@@ -19,4 +19,9 @@ interface EmpleadoRepositoryInterface
     public function updateEmployee(int $id, array $data): array;
     public function findContratoPreviewData(int $empleadoId, ?int $contratoId = null): ?array;
     public function persistGeneratedContract(int $empleadoId, int $contratoId, array $payload, string $pdfBinary, string $filename): array;
+    public function createContrato(int $empleadoId, array $data): array;
+    public function updateContrato(int $empleadoId, int $contratoId, array $data): array;
+    public function finalizeContrato(int $empleadoId, int $contratoId, ?string $fechaFin = null): array;
+    public function getContratoVersiones(int $empleadoId, int $contratoId): array;
+    public function uploadContratoFirmado(int $empleadoId, int $contratoId, array $fileData): array;
 }
