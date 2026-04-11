@@ -27,14 +27,14 @@ class EloquentGeoRepository implements GeoRepositoryInterface
         $prefijoColumn = $this->firstExistingColumn('paises', ['prefijo_telefonico', 'prefijo']) ?? 'prefijo_telefonico';
 
         return $query->get()
-            ->map(fn($item) => new Pais(
+            ->map(fn($item) => (new Pais(
                 id: (int) ($item->id_pais ?? $item->id ?? 0),
                 nombre: (string) ($item->nombre ?? ''),
                 iso2: (string) ($item->iso2 ?? ''),
                 iso3: (string) ($item->iso3 ?? ''),
                 prefijo: (string) ($item->{$prefijoColumn} ?? ''),
                 activo: $this->hasColumn('paises', 'activo') ? (bool) $item->activo : true
-            )->toArray())
+            ))->toArray())
             ->toArray();
     }
 
@@ -50,12 +50,12 @@ class EloquentGeoRepository implements GeoRepositoryInterface
         return DepartamentoModel::where($paisForeignKey, $paisId)
             ->orderBy('nombre', 'asc')
             ->get()
-            ->map(fn($item) => new Departamento(
+            ->map(fn($item) => (new Departamento(
                 id: (int) ($item->id_departamento ?? 0),
                 nombre: (string) ($item->nombre ?? ''),
                 codigoExpedido: (string) ($item->{$codigoColumn} ?? ''),
                 paisId: (int) ($item->{$paisForeignKey} ?? 0)
-            )->toArray())
+            ))->toArray())
             ->toArray();
     }
 
@@ -70,11 +70,11 @@ class EloquentGeoRepository implements GeoRepositoryInterface
         return CiudadModel::where($departamentoForeignKey, $departamentoId)
             ->orderBy('nombre', 'asc')
             ->get()
-            ->map(fn($item) => new Ciudad(
+            ->map(fn($item) => (new Ciudad(
                 id: (int) ($item->id_ciudad ?? 0),
                 nombre: (string) ($item->nombre ?? ''),
                 departamentoId: (int) ($item->{$departamentoForeignKey} ?? 0)
-            )->toArray())
+            ))->toArray())
             ->toArray();
     }
 
@@ -83,11 +83,11 @@ class EloquentGeoRepository implements GeoRepositoryInterface
         $paisForeignKey = $this->firstExistingColumn('nacionalidades', ['id_pais', 'pais_id']);
 
         return NacionalidadModel::all()
-            ->map(fn($item) => new Nacionalidad(
+            ->map(fn($item) => (new Nacionalidad(
                 id: (int) ($item->id_nacionalidad ?? 0),
                 gentilicio: (string) ($item->gentilicio ?? ''),
                 paisId: (int) ($paisForeignKey ? ($item->{$paisForeignKey} ?? 0) : 0)
-            )->toArray())
+            ))->toArray())
             ->toArray();
     }
 
