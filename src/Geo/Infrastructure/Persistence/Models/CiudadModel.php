@@ -3,6 +3,7 @@
 namespace Src\Geo\Infrastructure\Persistence\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class CiudadModel extends Model
 {
@@ -12,10 +13,13 @@ class CiudadModel extends Model
     protected $fillable = [
         'nombre',
         'departamento_id',
+        'id_departamento',
     ];
 
     public function departamento()
     {
-        return $this->belongsTo(DepartamentoModel::class, 'departamento_id');
+        $foreignKey = Schema::hasColumn($this->getTable(), 'departamento_id') ? 'departamento_id' : 'id_departamento';
+
+        return $this->belongsTo(DepartamentoModel::class, $foreignKey, 'id_departamento');
     }
 }

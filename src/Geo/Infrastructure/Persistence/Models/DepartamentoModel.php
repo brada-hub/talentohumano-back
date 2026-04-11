@@ -3,6 +3,7 @@
 namespace Src\Geo\Infrastructure\Persistence\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class DepartamentoModel extends Model
 {
@@ -13,10 +14,13 @@ class DepartamentoModel extends Model
         'nombre',
         'codigo_expedido',
         'pais_id',
+        'id_pais',
     ];
 
     public function pais()
     {
-        return $this->belongsTo(PaisModel::class, 'pais_id', 'id_pais');
+        $foreignKey = Schema::hasColumn($this->getTable(), 'pais_id') ? 'pais_id' : 'id_pais';
+
+        return $this->belongsTo(PaisModel::class, $foreignKey, 'id_pais');
     }
 }
