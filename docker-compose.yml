@@ -19,6 +19,7 @@ services:
       - DB_DATABASE=${DB_DATABASE:-sigeth_db}
       - DB_USERNAME=${DB_USERNAME:-root}
       - DB_PASSWORD=${DB_PASSWORD:-root_th_seguro2026}
+      - SANCTUM_STATEFUL_DOMAINS=sigeth.unitepc.pro,api.sigeth.unitepc.pro,postulaciones.unitepc.pro,sigva.unitepc.pro
     volumes:
       - sigeth_storage:/var/www/html/storage
     networks:
