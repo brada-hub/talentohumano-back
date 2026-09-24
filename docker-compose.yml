@@ -6,19 +6,27 @@ services:
     container_name: sigeth-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${PORT:-8005}:8000"
     environment:
       - APP_NAME=SIGETH
-      - APP_ENV=${APP_ENV:-local}
-      - APP_DEBUG=${APP_DEBUG:-true}
-      - APP_URL=${APP_URL:-http://localhost:8000}
+      - APP_ENV=${APP_ENV:-production}
+      - APP_KEY=${APP_KEY:-base64:1f5SVC+eeaGhn/rFcJZbrrXjj6e4jQeZfnfWb/mZqBk=}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - APP_URL=${APP_URL:-https://api.sigeth.unitepc.pro}
       - DB_CONNECTION=mysql
-      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_HOST=${DB_HOST:-th-mysql}
       - DB_PORT=${DB_PORT:-3306}
       - DB_DATABASE=${DB_DATABASE:-sigeth_db}
       - DB_USERNAME=${DB_USERNAME:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-admin123}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - DB_PASSWORD=${DB_PASSWORD:-root_th_seguro2026}
     volumes:
-      - ./storage:/var/www/html/storage
+      - sigeth_storage:/var/www/html/storage
+    networks:
+      - th-ecosystem
+
+volumes:
+  sigeth_storage:
+
+networks:
+  th-ecosystem:
+    external: true
