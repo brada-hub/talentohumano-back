@@ -30,5 +30,9 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
             'user' => \Src\Auth\Infrastructure\Persistence\Models\UserModel::class,
         ]);
+
+        if (config('app.env') === 'production' || str_starts_with((string) config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
     }
 }
