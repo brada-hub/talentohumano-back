@@ -46,8 +46,9 @@ RUN composer install --no-dev --no-interaction --no-scripts --prefer-dist --no-a
 # Copiar el código fuente completo de la aplicación
 COPY . .
 
-# Regenerar autoloader optimizado
-RUN composer dump-autoload --optimize --no-dev
+# Limpiar caches residuales y regenerar autoloader optimizado sin scripts de artisan
+RUN rm -f bootstrap/cache/*.php \
+    && composer dump-autoload --optimize --no-dev --no-scripts
 
 # Configurar Nginx, Supervisor y Entrypoint
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
