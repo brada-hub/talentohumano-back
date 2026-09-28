@@ -43,6 +43,39 @@ class PersonaModel extends Model
         'activo' => 'boolean',
     ];
 
+    protected $appends = [
+        'apellido_paterno',
+        'apellido_materno',
+        'foto_url',
+    ];
+
+    public function getApellidoPaternoAttribute(): ?string
+    {
+        return $this->primer_apellido;
+    }
+
+    public function getApellidoMaternoAttribute(): ?string
+    {
+        return $this->segundo_apellido;
+    }
+
+    public function getFotoUrlAttribute(): ?string
+    {
+        if (!$this->foto) {
+            return null;
+        }
+
+        if (str_starts_with($this->foto, 'http://') || str_starts_with($this->foto, 'https://')) {
+            return $this->foto;
+        }
+
+        if (str_starts_with($this->foto, '/storage/')) {
+            return url($this->foto);
+        }
+
+        return url('/storage/' . ltrim($this->foto, '/'));
+    }
+
     public function sexo()
     {
         return $this->belongsTo(\Src\Personal\Infrastructure\Persistence\Models\SexoModel::class, 'id_sexo');

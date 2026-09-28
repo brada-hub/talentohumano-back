@@ -27,4 +27,10 @@ dist/
 *.tar.gz
 *.zip
 .env.*.local
-
+*.tmp
+*.bak
+test_*.php
+tmp_*.*
+temp_*.*
+*.txt
+!robots.txt

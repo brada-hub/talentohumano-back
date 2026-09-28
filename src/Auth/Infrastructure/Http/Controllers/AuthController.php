@@ -29,7 +29,16 @@ final class AuthController extends Controller
 
             $result = $this->loginHandler->handle($command);
 
-            return ApiResponse::success($result, 'Sesión iniciada correctamente');
+            $userModel = \Src\Auth\Infrastructure\Persistence\Models\UserModel::with([
+                'sede', 'persona.sexo', 'roles.permissions', 'roles.sistema', 'permissions.sistema'
+            ])->where('username', $request->input('username'))->first();
+
+            $userData = $userModel ? $this->buildUserPayload($userModel) : $result['user'];
+
+            return ApiResponse::success([
+                'token' => $result['token'],
+                'user'  => $userData,
+            ], 'Sesión iniciada correctamente');
         } catch (InvalidCredentialsException $e) {
             return ApiResponse::unauthorized($e->getMessage());
         } catch (\Exception $e) {
@@ -51,18 +60,41 @@ final class AuthController extends Controller
     public function me(): JsonResponse
     {
         $user = auth()->user();
-        
-        // Load roles with permissions AND sistema, direct permissions and persona with sede
         $user->load(['sede', 'persona.sexo', 'roles.permissions', 'roles.sistema', 'permissions.sistema']);
         
+        $userData = $this->buildUserPayload($user);
+        
+        return ApiResponse::success($userData, 'Datos del usuario autenticado');
+    }
+
+    private function buildUserPayload(\Src\Auth\Infrastructure\Persistence\Models\UserModel $user): array
+    {
         $permissionsBySystem = [];
+        $isGlobalAdmin = false;
+
+        // Map known systems by ID in case relationship is not preloaded
+        $systemSlugMap = [
+            1 => 'sigeth',
+            2 => 'sispo',
+            3 => 'sigva',
+        ];
+
         foreach ($user->roles as $role) {
+            $roleNameUpper = strtoupper(trim($role->nombres ?? ''));
+            $sysId = (int)($role->sistema_id ?? 0);
+
+            // ONLY a user with role Administrador / Director in SIGETH (sistema_id: 1) is a true Global Admin
+            if ($sysId === 1 && in_array($roleNameUpper, ['ADMINISTRADOR', 'ADMIN', 'SUPER ADMIN', 'SUPERADMIN', 'DIRECTOR (ENCARGADO)'])) {
+                $isGlobalAdmin = true;
+            }
+
             $sistema = $role->sistema;
-            $sistemaName = $sistema ? $sistema->sistema : 'Global';
-            $sistemaSlug = $sistema ? strtolower(str_replace(' ', '_', $sistema->sistema)) : 'global';
+            $sistemaName = $sistema ? $sistema->sistema : ($sysId === 1 ? 'SIGETH' : ($sysId === 2 ? 'SISPO' : ($sysId === 3 ? 'SIGVA' : 'Global')));
+            $sistemaSlug = $sistema ? strtolower(str_replace(' ', '_', $sistema->sistema)) : ($systemSlugMap[$sysId] ?? 'global');
             
             if (!isset($permissionsBySystem[$sistemaSlug])) {
                 $permissionsBySystem[$sistemaSlug] = [
+                    'sistema_id' => $sysId,
                     'sistema' => $sistemaName,
                     'url' => $sistema ? $sistema->url_sistema : null,
                     'roles' => [],
@@ -76,20 +108,55 @@ final class AuthController extends Controller
                 $permissionsBySystem[$sistemaSlug]['permissions'][] = $permission->nombres;
             }
         }
-        
-        // Final sanitization of arrays
+
+        foreach ($user->permissions as $permission) {
+            $sistema = $permission->sistema;
+            $sysId = (int)($permission->sistema_id ?? 0);
+            $sistemaSlug = $sistema ? strtolower(str_replace(' ', '_', $sistema->sistema)) : ($systemSlugMap[$sysId] ?? 'global');
+
+            if (!isset($permissionsBySystem[$sistemaSlug])) {
+                $permissionsBySystem[$sistemaSlug] = [
+                    'sistema_id' => $sysId,
+                    'sistema' => $sistema ? $sistema->sistema : ($sysId === 1 ? 'SIGETH' : ($sysId === 2 ? 'SISPO' : ($sysId === 3 ? 'SIGVA' : 'Global'))),
+                    'url' => $sistema ? $sistema->url_sistema : null,
+                    'roles' => [],
+                    'permissions' => []
+                ];
+            }
+            $permissionsBySystem[$sistemaSlug]['permissions'][] = $permission->nombres;
+        }
+
+        // If user is a verified Global Super Admin, grant full access across all systems
+        if ($isGlobalAdmin) {
+            $allSystems = \Src\Auth\Infrastructure\Persistence\Models\SistemaModel::with(['permissions', 'roles'])->get();
+            foreach ($allSystems as $sys) {
+                $sSlug = strtolower(str_replace(' ', '_', $sys->sistema));
+                if (!isset($permissionsBySystem[$sSlug])) {
+                    $permissionsBySystem[$sSlug] = [
+                        'sistema_id' => $sys->id_sistema,
+                        'sistema' => $sys->sistema,
+                        'url' => $sys->url_sistema,
+                        'roles' => ['Administrador'],
+                        'permissions' => $sys->permissions->pluck('nombres')->toArray()
+                    ];
+                } else {
+                    if (!in_array('Administrador', $permissionsBySystem[$sSlug]['roles'])) {
+                        $permissionsBySystem[$sSlug]['roles'][] = 'Administrador';
+                    }
+                    $permissionsBySystem[$sSlug]['permissions'] = array_values(array_unique(array_merge(
+                        $permissionsBySystem[$sSlug]['permissions'],
+                        $sys->permissions->pluck('nombres')->toArray()
+                    )));
+                }
+            }
+        }
+
+        // Clean & de-duplicate arrays
+        $flatPermissions = [];
         foreach ($permissionsBySystem as $slug => $data) {
             $permissionsBySystem[$slug]['roles'] = array_values(array_unique($data['roles']));
             $permissionsBySystem[$slug]['permissions'] = array_values(array_unique($data['permissions']));
-        }
-
-        $flatPermissions = [];
-        foreach ($permissionsBySystem as $data) {
-            $flatPermissions = array_merge($flatPermissions, $data['permissions']);
-        }
-
-        foreach ($user->permissions as $permission) {
-            $flatPermissions[] = $permission->nombres;
+            $flatPermissions = array_merge($flatPermissions, $permissionsBySystem[$slug]['permissions']);
         }
 
         $flatPermissions = array_values(array_unique($flatPermissions));
@@ -97,27 +164,34 @@ final class AuthController extends Controller
         // Build basic user response mapping roles specifically for frontend compatibility
         $persona = $user->persona;
         if ($persona && $persona->foto) {
-            $persona->foto_url = asset($persona->foto); // Assuming path is already full or needs storage/
+            $persona->foto_url = asset($persona->foto);
         }
 
-        $userData = [
+        return [
             'id_user' => $user->id_user,
+            'id' => $user->id_user,
             'id_persona' => $user->id_persona,
             'username' => $user->username,
-            'activo' => $user->activo,
+            'activo' => (bool)$user->activo,
             'debe_cambiar_password' => (bool)$user->debe_cambiar_password,
             'id_sede_scope' => $user->id_sede_scope,
             'sede' => $user->sede,
             'persona' => $persona,
+            'is_global_admin' => $isGlobalAdmin,
+            'allowed_systems' => array_values(array_keys($permissionsBySystem)),
             'roles' => $user->roles->map(fn($r) => [
                 'id_rol' => $r->id_rol,
+                'id' => $r->id_rol,
                 'nombres' => $r->nombres,
+                'nombre' => $r->nombres,
+                'name' => $r->nombres,
+                'sistema_id' => $r->sistema_id,
+                'sistema' => $r->sistema ? $r->sistema->sistema : null,
             ]),
             'permissions' => $flatPermissions,
+            'permisos' => $flatPermissions,
             'access_metadata' => $permissionsBySystem
         ];
-        
-        return ApiResponse::success($userData, 'Datos del usuario autenticado');
     }
 
     public function changePassword(\Illuminate\Http\Request $request): JsonResponse

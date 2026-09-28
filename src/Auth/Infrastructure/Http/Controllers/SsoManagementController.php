@@ -116,7 +116,7 @@ final class SsoManagementController extends Controller
     // --- User-Role Assignments ---
     public function getUsers(Request $request): JsonResponse
     {
-        $users = UserModel::with(['roles.sistema', 'permissions.sistema'])->get();
+        $users = UserModel::with(['roles.sistema', 'permissions.sistema', 'persona', 'sede'])->get();
         return ApiResponse::success($users);
     }
 
@@ -136,7 +136,7 @@ final class SsoManagementController extends Controller
         $user->id_sede_scope = $validated['id_sede_scope'] ?? null;
         $user->save();
         
-        return ApiResponse::success($user->load(['roles.sistema', 'permissions.sistema']), 'Accesos actualizados correctamente');
+        return ApiResponse::success($user->load(['roles.sistema', 'permissions.sistema', 'persona', 'sede']), 'Accesos actualizados correctamente');
     }
 
     public function updateUserStatus($id): JsonResponse
@@ -144,7 +144,7 @@ final class SsoManagementController extends Controller
         $user = UserModel::findOrFail($id);
         $user->activo = !$user->activo;
         $user->save();
-        return ApiResponse::success($user, 'Estado de usuario actualizado');
+        return ApiResponse::success($user->load(['roles.sistema', 'permissions.sistema', 'persona', 'sede']), 'Estado de usuario actualizado');
     }
 
     public function resetUserPassword($id): JsonResponse
@@ -175,25 +175,73 @@ final class SsoManagementController extends Controller
     public function storeUser(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'username'   => 'required|unique:users,username',
-            'password'   => 'required|min:4',
-            'id_persona' => 'required|exists:personas,id',
-            'role_ids'   => 'array',
-            'role_ids.*' => 'exists:roles,id_rol',
+            'id_persona'       => 'nullable|exists:personas,id',
+            'nombres'          => 'required_without:id_persona|nullable|string|max:255',
+            'primer_apellido'  => 'required_without:id_persona|nullable|string|max:255',
+            'segundo_apellido' => 'nullable|string|max:255',
+            'ci'               => 'required_without:id_persona|nullable|string|max:50',
+            'username'         => 'nullable|string|max:255',
+            'password'         => 'nullable|min:4',
+            'id_sede_scope'    => 'nullable|exists:sedes,id_sede',
+            'role_ids'         => 'array',
+            'role_ids.*'       => 'exists:roles,id_rol',
         ]);
-        
+
+        $idPersona = $validated['id_persona'] ?? null;
+
+        // If id_persona not provided, find or create Persona by CI
+        if (!$idPersona) {
+            $ci = trim($validated['ci']);
+            $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::where('ci', $ci)->first();
+
+            if (!$persona) {
+                $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::create([
+                    'nombres'          => mb_strtoupper(trim($validated['nombres'])),
+                    'primer_apellido'  => mb_strtoupper(trim($validated['primer_apellido'])),
+                    'segundo_apellido' => !empty($validated['segundo_apellido']) ? mb_strtoupper(trim($validated['segundo_apellido'])) : null,
+                    'ci'               => $ci,
+                    'activo'           => true,
+                ]);
+            } else {
+                $persona->update([
+                    'nombres'          => mb_strtoupper(trim($validated['nombres'])),
+                    'primer_apellido'  => mb_strtoupper(trim($validated['primer_apellido'])),
+                    'segundo_apellido' => !empty($validated['segundo_apellido']) ? mb_strtoupper(trim($validated['segundo_apellido'])) : $persona->segundo_apellido,
+                ]);
+            }
+
+            $idPersona = $persona->id;
+        } else {
+            $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::find($idPersona);
+        }
+
+        // Determine username & password (default to CI)
+        $defaultCredential = $persona ? $persona->ci : ($validated['ci'] ?? 'user' . rand(1000, 9999));
+        $username = !empty($validated['username']) ? trim($validated['username']) : $defaultCredential;
+        $password = !empty($validated['password']) ? $validated['password'] : $defaultCredential;
+
+        // Check if username or persona already has a user account
+        $existingUser = UserModel::where('username', $username)
+            ->orWhere('id_persona', $idPersona)
+            ->first();
+
+        if ($existingUser) {
+            return ApiResponse::error("Ya existe una cuenta de usuario para este funcionario (Usuario: {$existingUser->username}).", 422);
+        }
+
         $user = UserModel::create([
-            'username'   => $validated['username'],
-            'password'   => \Illuminate\Support\Facades\Hash::make($validated['password']),
-            'id_persona' => $validated['id_persona'],
-            'activo'     => true,
-            'debe_cambiar_password' => true,
+            'username'              => $username,
+            'password'              => \Illuminate\Support\Facades\Hash::make($password),
+            'id_persona'            => $idPersona,
+            'id_sede_scope'         => $validated['id_sede_scope'] ?? null,
+            'activo'                => true,
+            'debe_cambiar_password' => false,
         ]);
         
         if (!empty($validated['role_ids'])) {
             $user->roles()->sync($validated['role_ids']);
         }
         
-        return ApiResponse::success($user->load('roles.sistema'), 'Usuario creado correctamente');
+        return ApiResponse::success($user->load(['roles.sistema', 'permissions.sistema', 'persona', 'sede']), 'Usuario creado correctamente');
     }
 }

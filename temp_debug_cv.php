@@ -1,3 +1,0 @@
-<?php
-
-// Archivo temporal neutralizado.
