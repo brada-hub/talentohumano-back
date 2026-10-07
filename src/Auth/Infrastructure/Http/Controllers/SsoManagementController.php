@@ -187,61 +187,74 @@ final class SsoManagementController extends Controller
             'role_ids.*'       => 'exists:roles,id_rol',
         ]);
 
-        $idPersona = $validated['id_persona'] ?? null;
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $idPersona = $validated['id_persona'] ?? null;
 
-        // If id_persona not provided, find or create Persona by CI
-        if (!$idPersona) {
-            $ci = trim($validated['ci']);
-            $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::where('ci', $ci)->first();
+            // If id_persona not provided, find or create Persona by CI
+            if (!$idPersona) {
+                $ci = trim($validated['ci']);
+                $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::where('ci', $ci)->first();
 
-            if (!$persona) {
-                $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::create([
-                    'nombres'          => mb_strtoupper(trim($validated['nombres'])),
-                    'primer_apellido'  => mb_strtoupper(trim($validated['primer_apellido'])),
-                    'segundo_apellido' => !empty($validated['segundo_apellido']) ? mb_strtoupper(trim($validated['segundo_apellido'])) : null,
-                    'ci'               => $ci,
-                    'activo'           => true,
-                ]);
+                if (!$persona) {
+                    $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::create([
+                        'nombres'          => mb_strtoupper(trim($validated['nombres'])),
+                        'primer_apellido'  => mb_strtoupper(trim($validated['primer_apellido'])),
+                        'segundo_apellido' => !empty($validated['segundo_apellido']) ? mb_strtoupper(trim($validated['segundo_apellido'])) : null,
+                        'ci'               => $ci,
+                        'activo'           => true,
+                    ]);
+                } else {
+                    $persona->update([
+                        'nombres'          => mb_strtoupper(trim($validated['nombres'])),
+                        'primer_apellido'  => mb_strtoupper(trim($validated['primer_apellido'])),
+                        'segundo_apellido' => !empty($validated['segundo_apellido']) ? mb_strtoupper(trim($validated['segundo_apellido'])) : $persona->segundo_apellido,
+                    ]);
+                }
+
+                $idPersona = $persona->id;
             } else {
-                $persona->update([
-                    'nombres'          => mb_strtoupper(trim($validated['nombres'])),
-                    'primer_apellido'  => mb_strtoupper(trim($validated['primer_apellido'])),
-                    'segundo_apellido' => !empty($validated['segundo_apellido']) ? mb_strtoupper(trim($validated['segundo_apellido'])) : $persona->segundo_apellido,
-                ]);
+                $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::find($idPersona);
             }
 
-            $idPersona = $persona->id;
-        } else {
-            $persona = \Src\Personal\Infrastructure\Persistence\Models\PersonaModel::find($idPersona);
+            // Determine username & password (default to CI)
+            $defaultCredential = $persona ? $persona->ci : ($validated['ci'] ?? 'user' . rand(1000, 9999));
+            $username = !empty($validated['username']) ? trim($validated['username']) : $defaultCredential;
+            $password = !empty($validated['password']) ? $validated['password'] : $defaultCredential;
+
+            // Check if username or persona already has a user account
+            $existingUser = UserModel::where('username', $username)
+                ->orWhere('id_persona', $idPersona)
+                ->first();
+
+            if ($existingUser) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                return ApiResponse::error("Ya existe una cuenta de usuario para este funcionario (Usuario: {$existingUser->username}).", 422);
+            }
+
+            $user = UserModel::create([
+                'username'              => $username,
+                'password'              => \Illuminate\Support\Facades\Hash::make($password),
+                'id_persona'            => $idPersona,
+                'id_sede_scope'         => $validated['id_sede_scope'] ?? null,
+                'activo'                => true,
+                'debe_cambiar_password' => false,
+            ]);
+            
+            if (!empty($validated['role_ids'])) {
+                $user->roles()->sync($validated['role_ids']);
+            }
+            
+            \Illuminate\Support\Facades\DB::commit();
+
+            return ApiResponse::success($user->load(['roles.sistema', 'permissions.sistema', 'persona', 'sede']), 'Usuario creado correctamente');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error al crear usuario SSO: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+
+            return ApiResponse::error('Error al crear usuario: ' . $e->getMessage(), 500);
         }
-
-        // Determine username & password (default to CI)
-        $defaultCredential = $persona ? $persona->ci : ($validated['ci'] ?? 'user' . rand(1000, 9999));
-        $username = !empty($validated['username']) ? trim($validated['username']) : $defaultCredential;
-        $password = !empty($validated['password']) ? $validated['password'] : $defaultCredential;
-
-        // Check if username or persona already has a user account
-        $existingUser = UserModel::where('username', $username)
-            ->orWhere('id_persona', $idPersona)
-            ->first();
-
-        if ($existingUser) {
-            return ApiResponse::error("Ya existe una cuenta de usuario para este funcionario (Usuario: {$existingUser->username}).", 422);
-        }
-
-        $user = UserModel::create([
-            'username'              => $username,
-            'password'              => \Illuminate\Support\Facades\Hash::make($password),
-            'id_persona'            => $idPersona,
-            'id_sede_scope'         => $validated['id_sede_scope'] ?? null,
-            'activo'                => true,
-            'debe_cambiar_password' => false,
-        ]);
-        
-        if (!empty($validated['role_ids'])) {
-            $user->roles()->sync($validated['role_ids']);
-        }
-        
-        return ApiResponse::success($user->load(['roles.sistema', 'permissions.sistema', 'persona', 'sede']), 'Usuario creado correctamente');
     }
 }

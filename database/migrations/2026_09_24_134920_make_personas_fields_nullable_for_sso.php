@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        \Illuminate\Support\Facades\DB::statement("SET FOREIGN_KEY_CHECKS=0;");
         \Illuminate\Support\Facades\DB::statement("
             ALTER TABLE personas 
                 MODIFY id_ci_expedido BIGINT UNSIGNED NULL,
@@ -23,6 +24,7 @@ return new class extends Migration
                 MODIFY id_ciudad BIGINT UNSIGNED NULL,
                 MODIFY id_pais BIGINT UNSIGNED NULL
         ");
+        \Illuminate\Support\Facades\DB::statement("SET FOREIGN_KEY_CHECKS=1;");
     }
 
     /**
